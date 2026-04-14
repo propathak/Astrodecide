@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import QuestionCounter from "@/components/QuestionCounter";
+import PaywallModal from "@/components/PaywallModal";
+import StructuredAnswer from "@/components/StructuredAnswer";
 
 const QUICK_ACTIONS = [
   "What's blocking me today?",
@@ -13,12 +17,21 @@ const QUICK_ACTIONS = [
 
 const CATEGORIES = ["CAREER", "LOVE", "MONEY", "FAMILY", "TRAVEL", "HEALTH", "TIMING"];
 
+interface StructuredData {
+  confidenceScore: number;
+  bestTimeWindows: string[];
+  do: string[];
+  avoid: string[];
+  wait: string[];
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   isGreeting?: boolean;
+  structured?: StructuredData;
 }
 
 function getTimeOfDay(): string {
@@ -28,7 +41,19 @@ function getTimeOfDay(): string {
   return "evening";
 }
 
+// Strip ---STRUCTURED---...---END--- block from displayed text
+function stripStructuredBlock(text: string): string {
+  const startTag = "---STRUCTURED---";
+  const endTag = "---END---";
+  const startIdx = text.indexOf(startTag);
+  if (startIdx === -1) return text;
+  const endIdx = text.indexOf(endTag);
+  if (endIdx === -1) return text.slice(0, startIdx).trim();
+  return text.slice(0, startIdx).trim();
+}
+
 export default function AskPage() {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,10 +61,30 @@ export default function AskPage() {
   const [initialized, setInitialized] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showCategoryBar, setShowCategoryBar] = useState(false);
+
+  // Quota state
+  const [questionsUsed, setQuestionsUsed] = useState(0);
+  const [isPaid, setIsPaid] = useState(false);
+  const [passExpiresAt, setPassExpiresAt] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Proactive greeting — fetch today's insight and show as opening message
+  // Fetch quota on mount
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetch("/api/quota")
+      .then((r) => r.json())
+      .then((data) => {
+        setQuestionsUsed(data.freeQuestionsUsed ?? 0);
+        setIsPaid(data.paymentStatus === "active" && !!data.passExpiresAt);
+        setPassExpiresAt(data.passExpiresAt ?? null);
+      })
+      .catch(() => {});
+  }, [session]);
+
+  // Proactive greeting
   useEffect(() => {
     if (initialized) return;
     setInitialized(true);
@@ -115,11 +160,25 @@ export default function AskPage() {
         }),
       });
 
+      // Paywall hit
+      if (res.status === 402) {
+        setShowPaywall(true);
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok) throw new Error("API error");
+
+      // Update quota from response headers
+      const xUsed = res.headers.get("X-Questions-Used");
+      const xPaid = res.headers.get("X-Was-Paid");
+      if (xUsed) setQuestionsUsed(parseInt(xUsed, 10));
+      if (xPaid === "0") setIsPaid(false);
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let assistantText = "";
+      let structuredData: StructuredData | undefined;
 
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
@@ -141,12 +200,27 @@ export default function AskPage() {
               if (data === "[DONE]") break;
               try {
                 const parsed = JSON.parse(data);
+
+                // Structured output event
+                if (parsed.structured) {
+                  structuredData = parsed.structured;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsg.id
+                        ? { ...m, structured: structuredData }
+                        : m
+                    )
+                  );
+                  continue;
+                }
+
                 const delta = parsed.delta?.text ?? parsed.text ?? "";
                 assistantText += delta;
+                const displayText = stripStructuredBlock(assistantText);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsg.id
-                      ? { ...m, content: assistantText }
+                      ? { ...m, content: displayText }
                       : m
                   )
                 );
@@ -187,28 +261,37 @@ export default function AskPage() {
         flexDirection: "column",
       }}
     >
-      {/* ALIA header */}
+      {/* Header */}
       <div
         style={{
           padding: "48px 24px 12px",
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          justifyContent: "space-between",
         }}
       >
-        <div className="alia-dot" />
-        <span
-          style={{
-            fontFamily: "var(--font-inter), sans-serif",
-            fontSize: "11px",
-            fontWeight: 300,
-            letterSpacing: "0.22em",
-            color: "#9090A8",
-          }}
-        >
-          ALIA
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="alia-dot" />
+          <span
+            style={{
+              fontFamily: "var(--font-inter), sans-serif",
+              fontSize: "11px",
+              fontWeight: 300,
+              letterSpacing: "0.22em",
+              color: "#9090A8",
+            }}
+          >
+            ALIA
+          </span>
+        </div>
+
+        <QuestionCounter
+          used={questionsUsed}
+          isPaid={isPaid}
+          passExpiresAt={passExpiresAt}
+          onUpgrade={() => setShowPaywall(true)}
+        />
       </div>
 
       {/* Messages */}
@@ -222,7 +305,7 @@ export default function AskPage() {
           gap: "22px",
         }}
       >
-        {/* Initial loading state */}
+        {/* Initial loading */}
         {loading && messages.length === 0 && (
           <div
             style={{
@@ -234,11 +317,7 @@ export default function AskPage() {
             }}
           >
             {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="typing-dot"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
+              <span key={i} className="typing-dot" style={{ animationDelay: `${i * 0.2}s` }} />
             ))}
           </div>
         )}
@@ -248,27 +327,31 @@ export default function AskPage() {
             key={msg.id}
             style={{
               display: "flex",
-              justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+              flexDirection: "column",
+              alignItems: msg.role === "user" ? "flex-end" : "flex-start",
               animation: "slideUp 260ms ease-out",
             }}
           >
             {msg.role === "assistant" ? (
-              <p
-                style={{
-                  fontFamily: "var(--font-playfair), serif",
-                  fontSize: msg.isGreeting ? "22px" : "19px",
-                  fontWeight: 400,
-                  lineHeight: 1.72,
-                  color: "#ffffff",
-                  maxWidth: "100%",
-                  whiteSpace: "pre-wrap",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                {msg.content
-                  .replace(/\*\*(.*?)\*\*/g, "$1")
-                  .replace(/__(.*?)__/g, "$1")}
-              </p>
+              <>
+                <p
+                  style={{
+                    fontFamily: "var(--font-playfair), serif",
+                    fontSize: msg.isGreeting ? "22px" : "19px",
+                    fontWeight: 400,
+                    lineHeight: 1.72,
+                    color: "#ffffff",
+                    maxWidth: "100%",
+                    whiteSpace: "pre-wrap",
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  {msg.content
+                    .replace(/\*\*(.*?)\*\*/g, "$1")
+                    .replace(/__(.*?)__/g, "$1")}
+                </p>
+                {msg.structured && <StructuredAnswer data={msg.structured} />}
+              </>
             ) : (
               <div
                 style={{
@@ -302,33 +385,18 @@ export default function AskPage() {
             }}
           >
             {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action}
-                onClick={() => sendMessage(action)}
-                className="chip"
-              >
+              <button key={action} onClick={() => sendMessage(action)} className="chip">
                 {action}
               </button>
             ))}
           </div>
         )}
 
-        {/* Typing indicator while streaming */}
+        {/* Typing indicator */}
         {loading && messages.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: "5px",
-              alignItems: "center",
-              padding: "4px 0",
-            }}
-          >
+          <div style={{ display: "flex", gap: "5px", alignItems: "center", padding: "4px 0" }}>
             {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="typing-dot"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
+              <span key={i} className="typing-dot" style={{ animationDelay: `${i * 0.2}s` }} />
             ))}
           </div>
         )}
@@ -347,22 +415,13 @@ export default function AskPage() {
           paddingBottom: "calc(68px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* Category chips — appear after first user message */}
+        {/* Category chips */}
         {showCategoryBar && (
-          <div
-            style={{
-              padding: "10px 16px 6px",
-              display: "flex",
-              gap: "6px",
-              overflowX: "auto",
-            }}
-          >
+          <div style={{ padding: "10px 16px 6px", display: "flex", gap: "6px", overflowX: "auto" }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() =>
-                  setActiveCategory(activeCategory === cat ? null : cat)
-                }
+                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                 className={`chip${activeCategory === cat ? " active" : ""}`}
                 style={{ fontSize: "10px", padding: "5px 12px" }}
               >
@@ -373,14 +432,7 @@ export default function AskPage() {
         )}
 
         {/* Text input row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "10px",
-            padding: "8px 16px 10px",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", padding: "8px 16px 10px" }}>
           <textarea
             ref={inputRef}
             value={input}
@@ -409,15 +461,8 @@ export default function AskPage() {
               width: "44px",
               height: "44px",
               borderRadius: "50%",
-              background:
-                loading || !input.trim()
-                  ? "rgba(255,255,255,0.04)"
-                  : "rgba(139,92,246,0.24)",
-              border: `1px solid ${
-                loading || !input.trim()
-                  ? "rgba(255,255,255,0.06)"
-                  : "rgba(139,92,246,0.45)"
-              }`,
+              background: loading || !input.trim() ? "rgba(255,255,255,0.04)" : "rgba(139,92,246,0.24)",
+              border: `1px solid ${loading || !input.trim() ? "rgba(255,255,255,0.06)" : "rgba(139,92,246,0.45)"}`,
               color: loading || !input.trim() ? "#3D3D52" : "#ffffff",
               fontSize: "18px",
               cursor: loading || !input.trim() ? "default" : "pointer",
@@ -432,6 +477,18 @@ export default function AskPage() {
           </button>
         </div>
       </div>
+
+      {/* Paywall modal */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={() => setShowPaywall(false)}
+          onUnlocked={(expiresAt) => {
+            setIsPaid(true);
+            setPassExpiresAt(expiresAt);
+            setShowPaywall(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import AmbientBackground from "@/components/AmbientBackground";
+import SessionProvider from "@/components/SessionProvider";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -40,9 +41,11 @@ export default function RootLayout({
     <html lang="en" className={`h-full ${playfair.variable} ${inter.variable}`}>
       <body className="min-h-full antialiased" style={{ background: "#070710", color: "#fff" }}>
         <AmbientBackground />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          {children}
-        </div>
+        <SessionProvider>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            {children}
+          </div>
+        </SessionProvider>
       </body>
     </html>
   );

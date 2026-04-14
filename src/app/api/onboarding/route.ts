@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { geocodeCity, parseBirthDataString } from "@/lib/astrology";
 import { calculateChart } from "@/lib/ephemeris";
+import { auth } from "@/lib/auth";
+import { getDb, COLLECTIONS } from "@/lib/firebase";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,14 +25,14 @@ export async function POST(req: NextRequest) {
     // Parse birth data
     const birthData = parseBirthDataString(dob, tob, lat, lon, tzone);
 
-    // Calculate chart using built-in ephemeris (no external API needed)
+    // Calculate chart using built-in ephemeris
     const chartResult = calculateChart(
       birthData.day, birthData.month, birthData.year,
       birthData.hour, birthData.min,
       lat, lon, tzone
     );
 
-    // Format planets to match expected schema
+    // Format planets
     const planets = chartResult.planets.map((p) => ({
       name: p.name,
       sign: p.sign,
@@ -41,7 +44,6 @@ export async function POST(req: NextRequest) {
       retrograde: p.retrograde,
     }));
 
-    // Add ascendant as a planet entry
     planets.unshift({
       name: "Ascendant",
       sign: chartResult.ascendant.sign,
@@ -74,7 +76,49 @@ export async function POST(req: NextRequest) {
       created_at: new Date().toISOString(),
     };
 
-    // Return success with basic chart summary
+    // Persist to Firestore if user is authenticated
+    const session = await auth();
+    if (session?.user?.id) {
+      const db = getDb();
+      const userId = session.user.id;
+
+      // Update user doc
+      await db.collection(COLLECTIONS.USERS).doc(userId).update({
+        name,
+        dob,
+        tob,
+        pob,
+        lat,
+        lon,
+        tzone,
+        onboardingDone: true,
+      });
+
+      // Write chart doc
+      await db.collection(COLLECTIONS.CHARTS).doc(userId).set({
+        userId,
+        chartData: JSON.stringify(planets),
+        dashaData,
+        ascendantSign: chartResult.ascendant.sign,
+        sunSign: chartResult.sun.sign,
+        moonSign: chartResult.moon.sign,
+        computedAt: FieldValue.serverTimestamp(),
+        source: "ephemeris",
+      });
+
+      // Fire-and-forget log
+      fetch(`${process.env.NEXTAUTH_URL}/api/log`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "onboarding",
+          userId,
+          email: session.user.email ?? "",
+          meta: { name, pob },
+        }),
+      }).catch(() => {});
+    }
+
     const response = NextResponse.json({
       success: true,
       summary: {
@@ -84,7 +128,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Store profile in a simple cookie for demo use
+    // Keep cookie for backward compat (anonymous fallback)
     response.cookies.set("astro_profile", JSON.stringify(profileData), {
       maxAge: 60 * 60 * 24 * 365,
       httpOnly: false,
