@@ -18,11 +18,11 @@ export default function AmbientBackground() {
     canvas.width = W;
     canvas.height = H;
 
-    // Mix of white, cyan-tinted, and purple-tinted stars
+    // Purple-tinted star palette — no cyan
     const starColors = [
       "220,215,255", // slight purple-white
-      "180,240,255", // cyan tint
-      "200,220,255", // cool white
+      "200,185,255", // soft violet
+      "215,205,255", // pale lavender
       "210,200,255", // soft purple
     ];
 
@@ -100,7 +100,7 @@ export default function AmbientBackground() {
           width: "620px",
           height: "620px",
           background:
-            "radial-gradient(circle, rgba(129,236,255,0.1) 0%, transparent 68%)",
+            "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 68%)",
           borderRadius: "50%",
           filter: "blur(80px)",
           animation: "orbFloat 20s ease-in-out infinite",

@@ -47,7 +47,7 @@ export default function BottomNav() {
               textDecoration: "none",
               padding: "8px 32px",
               borderRadius: "999px",
-              background: active ? "rgba(129,236,255,0.08)" : "transparent",
+              background: active ? "rgba(167,139,250,0.08)" : "transparent",
               transition: "background 200ms ease",
               minWidth: "88px",
             }}
@@ -55,8 +55,8 @@ export default function BottomNav() {
             <span
               style={{
                 fontSize: "14px",
-                color: active ? "#81ecff" : "#494847",
-                filter: active ? "drop-shadow(0 0 8px rgba(129,236,255,0.8))" : "none",
+                color: active ? "#a78bfa" : "#494847",
+                filter: active ? "drop-shadow(0 0 8px rgba(167,139,250,0.8))" : "none",
                 transition: "color 200ms ease, filter 200ms ease",
                 lineHeight: 1,
               }}
@@ -69,7 +69,7 @@ export default function BottomNav() {
                 fontSize: "9px",
                 fontWeight: active ? 600 : 400,
                 letterSpacing: "0.16em",
-                color: active ? "#81ecff" : "#494847",
+                color: active ? "#a78bfa" : "#494847",
                 textTransform: "uppercase",
                 transition: "color 200ms ease",
               }}

@@ -95,7 +95,7 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
             name: session?.user?.name ?? "",
             email: session?.user?.email ?? "",
           },
-          theme: { color: "#81ecff" },
+          theme: { color: "#7c3aed" },
           handler: async (response) => {
             try {
               const verifyRes = await fetch("/api/payment/verify", {

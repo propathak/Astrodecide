@@ -97,7 +97,7 @@ function WheelColumn({
         <span style={{
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "9px", fontWeight: 600,
-          letterSpacing: "0.24em", color: "#81ecff",
+          letterSpacing: "0.24em", color: "#a78bfa",
           textTransform: "uppercase", marginBottom: "10px",
         }}>
           {label}
@@ -108,8 +108,8 @@ function WheelColumn({
         <div style={{
           position: "absolute", top: ITEM_H * 2, left: "4px", right: "4px",
           height: ITEM_H,
-          background: "rgba(129,236,255,0.07)",
-          border: "1px solid rgba(129,236,255,0.16)",
+          background: "rgba(167,139,250,0.07)",
+          border: "1px solid rgba(167,139,250,0.16)",
           borderRadius: "12px", pointerEvents: "none", zIndex: 2,
         }} />
         {/* Top fade */}
@@ -214,14 +214,14 @@ function DatePicker({ onConfirm }: { onConfirm: (dob: string) => void }) {
         onClick={() => onConfirm(formatted)}
         style={{
           width: "100%", padding: "14px",
-          background: "linear-gradient(135deg, #81ecff, #00d4ec)",
+          background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
           border: "none", borderRadius: "999px",
-          color: "#003840",
+          color: "#1a0533",
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "13px", fontWeight: 600,
           letterSpacing: "0.08em",
           cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(129,236,255,0.28)",
+          boxShadow: "0 4px 20px rgba(167,139,250,0.28)",
           transition: "box-shadow 180ms ease",
         }}
       >
@@ -292,14 +292,14 @@ function TimePicker({ onConfirm }: { onConfirm: (tob: string) => void }) {
         onClick={() => onConfirm(display24)}
         style={{
           width: "100%", padding: "14px",
-          background: "linear-gradient(135deg, #81ecff, #00d4ec)",
+          background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
           border: "none", borderRadius: "999px",
-          color: "#003840",
+          color: "#1a0533",
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "13px", fontWeight: 600,
           letterSpacing: "0.08em",
           cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(129,236,255,0.28)",
+          boxShadow: "0 4px 20px rgba(167,139,250,0.28)",
         }}
       >
         {displayLabel} — Confirm
@@ -422,8 +422,8 @@ function CitySearch({ onConfirm }: { onConfirm: (city: string) => void }) {
         {loading && (
           <div style={{
             width: "16px", height: "16px", borderRadius: "50%",
-            border: "2px solid rgba(129,236,255,0.2)",
-            borderTop: "2px solid #81ecff",
+            border: "2px solid rgba(167,139,250,0.2)",
+            borderTop: "2px solid #a78bfa",
             animation: "cosmosRotate 0.8s linear infinite",
             flexShrink: 0, marginRight: "8px",
           }} />
@@ -455,10 +455,10 @@ function CitySearch({ onConfirm }: { onConfirm: (city: string) => void }) {
                 transition: "background 150ms ease",
                 display: "flex", alignItems: "center", gap: "10px",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(129,236,255,0.07)"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(167,139,250,0.07)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
             >
-              <span style={{ color: "#81ecff", fontSize: "12px", flexShrink: 0 }}>◎</span>
+              <span style={{ color: "#a78bfa", fontSize: "12px", flexShrink: 0 }}>◎</span>
               {r.label}
             </div>
           ))}
@@ -471,13 +471,13 @@ function CitySearch({ onConfirm }: { onConfirm: (city: string) => void }) {
           onClick={() => onConfirm(selected)}
           style={{
             width: "100%", padding: "14px",
-            background: "linear-gradient(135deg, #81ecff, #00d4ec)",
+            background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
             border: "none", borderRadius: "999px",
-            color: "#003840",
+            color: "#1a0533",
             fontFamily: "var(--font-manrope), sans-serif",
             fontSize: "13px", fontWeight: 600,
             letterSpacing: "0.08em", cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(129,236,255,0.28)",
+            boxShadow: "0 4px 20px rgba(167,139,250,0.28)",
             animation: "slideUp 200ms ease-out",
             marginTop: results.length > 0 ? "0" : "12px",
           }}
@@ -622,7 +622,7 @@ export default function OnboardingPage() {
         <span style={{
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
-          letterSpacing: "0.28em", color: "#81ecff", textTransform: "uppercase",
+          letterSpacing: "0.28em", color: "#a78bfa", textTransform: "uppercase",
         }}>
           ALIA
         </span>
@@ -650,12 +650,12 @@ export default function OnboardingPage() {
               <div style={{
                 background: "rgba(38,38,38,0.5)",
                 backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-                border: "1px solid rgba(129,236,255,0.12)",
+                border: "1px solid rgba(167,139,250,0.12)",
                 borderRadius: "20px 20px 5px 20px",
                 padding: "12px 18px",
                 fontFamily: "var(--font-manrope), sans-serif",
                 fontSize: "15px", fontWeight: 400,
-                color: "#d0f8ff", maxWidth: "78%", lineHeight: 1.55,
+                color: "#ede9fe", maxWidth: "78%", lineHeight: 1.55,
               }}>
                 {msg.content}
               </div>
@@ -681,7 +681,7 @@ export default function OnboardingPage() {
             <span style={{
               fontFamily: "var(--font-manrope), sans-serif",
               fontSize: "10px", letterSpacing: "0.24em",
-              color: "#81ecff", fontWeight: 500, textTransform: "uppercase",
+              color: "#a78bfa", fontWeight: 500, textTransform: "uppercase",
             }}>
               Mapping Stars
             </span>
@@ -722,7 +722,7 @@ export default function OnboardingPage() {
                 padding: "0 4px 0 20px",
                 transition: "border-color 200ms ease",
               }}
-              onFocusCapture={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(129,236,255,0.3)")}
+              onFocusCapture={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(167,139,250,0.3)")}
               onBlurCapture={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)")}
               >
                 <input
@@ -744,13 +744,13 @@ export default function OnboardingPage() {
                 onClick={handleTextSend}
                 style={{
                   width: "46px", height: "46px", borderRadius: "50%",
-                  background: "linear-gradient(135deg, #81ecff, #00d4ec)",
-                  border: "none", color: "#003840",
+                  background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
+                  border: "none", color: "#1a0533",
                   fontSize: "18px", fontWeight: 700,
                   cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
-                  boxShadow: "0 4px 20px rgba(129,236,255,0.28)",
+                  boxShadow: "0 4px 20px rgba(167,139,250,0.28)",
                 }}
               >
                 →

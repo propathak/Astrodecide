@@ -115,7 +115,7 @@ export default function YouPage() {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {[
-            { role: "Rising", roleDesc: "How the world sees you", sign: profile.rising, meta: risingMeta, accent: "#81ecff" },
+            { role: "Rising", roleDesc: "How the world sees you", sign: profile.rising, meta: risingMeta, accent: "#a78bfa" },
             { role: "Moon",   roleDesc: "Your emotional core",    sign: profile.moon,   meta: moonMeta,   accent: "#c47fff" },
             { role: "Sun",    roleDesc: "Your essential self",    sign: profile.sun,    meta: sunMeta,    accent: "#ff5ed6" },
           ].map((item) => (
@@ -196,7 +196,7 @@ export default function YouPage() {
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           {(profile.traits ?? []).map((trait, i) => {
-            const colors = ["#81ecff", "#c47fff", "#ff5ed6", "#81ecff", "#c47fff", "#ff5ed6"];
+            const colors = ["#a78bfa", "#c084fc", "#f472b6", "#a78bfa", "#c084fc", "#f472b6"];
             const c = colors[i % colors.length];
             return (
               <span key={trait} style={{
@@ -230,7 +230,7 @@ export default function YouPage() {
           background: "rgba(167,139,250,0.04)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(129,236,255,0.1)",
+          border: "1px solid rgba(167,139,250,0.1)",
           borderRadius: "20px",
           padding: "20px 20px",
         }}>
@@ -247,7 +247,7 @@ export default function YouPage() {
                 fontSize: "10px", fontWeight: 500,
                 color: "#a78bfa", letterSpacing: "0.08em",
                 background: "rgba(167,139,250,0.08)",
-                border: "1px solid rgba(129,236,255,0.15)",
+                border: "1px solid rgba(167,139,250,0.15)",
                 borderRadius: "999px",
                 padding: "3px 10px",
               }}>
@@ -279,7 +279,7 @@ export default function YouPage() {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           {[
-            { key: "career",        label: "Career",        icon: "◎", accent: "#81ecff", text: profile.insights.career },
+            { key: "career",        label: "Career",        icon: "◎", accent: "#a78bfa", text: profile.insights.career },
             { key: "relationships", label: "Relationships",  icon: "♡", accent: "#ff5ed6", text: profile.insights.relationships },
             { key: "self",          label: "Inner Self",     icon: "✦", accent: "#c47fff", text: profile.insights.self },
           ].map((block, i) => (
