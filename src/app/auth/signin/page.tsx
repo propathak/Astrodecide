@@ -3,7 +3,8 @@
 import { signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 
-const ZODIACS = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
+// \uFE0E = text variation selector — forces text rendering instead of emoji on iOS/macOS
+const ZODIACS = ["♈\uFE0E","♉\uFE0E","♊\uFE0E","♋\uFE0E","♌\uFE0E","♍\uFE0E","♎\uFE0E","♏\uFE0E","♐\uFE0E","♑\uFE0E","♒\uFE0E","♓\uFE0E"];
 const ZODIAC_NAMES = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 
 function randomBase() {
@@ -52,10 +53,11 @@ export default function SignInPage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "32px 24px",
-        background: "#080810",
+        padding: "calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 24px)",
+        background: "#07040e",
         position: "relative",
-        overflow: "hidden",
+        overflowX: "hidden",
+        overflowY: "auto",
       }}
     >
       {/* Background glow blobs */}
@@ -94,7 +96,7 @@ export default function SignInPage() {
 
         {/* ── Cosmos mark with zodiac inside orb ── */}
         <div style={{
-          textAlign: "center", marginBottom: "44px",
+          textAlign: "center", marginBottom: "32px",
           animation: "revealUp 700ms cubic-bezier(0.16,1,0.3,1) both",
         }}>
           {/* Orb container */}
@@ -155,28 +157,30 @@ export default function SignInPage() {
               flexDirection: "column",
               gap: "2px",
             }}>
-              {/* Zodiac symbol cycling inside */}
+              {/* Zodiac symbol cycling inside — text rendering forced */}
               <span style={{
-                fontSize: "38px",
+                fontSize: "42px",
                 lineHeight: 1,
                 opacity: zodiacVisible ? 1 : 0,
-                transform: zodiacVisible ? "scale(1)" : "scale(0.7)",
-                transition: "opacity 400ms ease, transform 400ms ease",
-                filter: "drop-shadow(0 0 8px rgba(255,255,255,0.6))",
+                transform: zodiacVisible ? "scale(1) translateY(0)" : "scale(0.65) translateY(4px)",
+                transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.34,1.56,0.64,1)",
+                filter: "drop-shadow(0 0 12px rgba(255,255,255,0.5))",
                 color: "#ffffff",
                 display: "block",
+                fontFamily: "'Segoe UI Symbol', 'Apple Symbols', 'FreeSerif', serif",
+                fontVariantEmoji: "text" as React.CSSProperties["fontVariantEmoji"],
               }}>
                 {ZODIACS[zodiacIndex]}
               </span>
               <span style={{
                 fontFamily: "var(--font-space-grotesk), sans-serif",
-                fontSize: "9px",
-                fontWeight: 500,
-                letterSpacing: "0.14em",
-                color: "rgba(255,255,255,0.5)",
+                fontSize: "8px",
+                fontWeight: 600,
+                letterSpacing: "0.18em",
+                color: "rgba(255,255,255,0.45)",
                 textTransform: "uppercase",
                 opacity: zodiacVisible ? 1 : 0,
-                transition: "opacity 400ms ease",
+                transition: "opacity 380ms ease",
               }}>
                 {ZODIAC_NAMES[zodiacIndex]}
               </span>
@@ -185,25 +189,25 @@ export default function SignInPage() {
 
           <p style={{
             fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontSize: "10px", letterSpacing: "0.42em",
+            fontSize: "10px", letterSpacing: "0.36em",
             color: "#a78bfa", textTransform: "uppercase",
-            marginBottom: "10px", fontWeight: 500,
+            marginBottom: "12px", fontWeight: 500,
           }}>
             Vedic Astrology
           </p>
           <h1 style={{
-            fontFamily: "var(--font-space-grotesk), var(--font-newsreader), serif",
-            fontSize: "46px", fontWeight: 700,
-            color: "#ffffff", letterSpacing: "-0.01em",
-            marginBottom: "14px", lineHeight: 1.05,
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "44px", fontWeight: 700,
+            color: "#ffffff", letterSpacing: "-0.02em",
+            marginBottom: "12px", lineHeight: 1.05,
           }}>
             AstroDecide
           </h1>
           <p style={{
-            fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
-            fontSize: "14px", fontWeight: 400,
-            color: "#9d8fc4", lineHeight: 1.75,
-            maxWidth: "255px", margin: "0 auto",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "15px", fontWeight: 400,
+            color: "#b8a8d8", lineHeight: 1.7,
+            maxWidth: "260px", margin: "0 auto",
           }}>
             Ask life&rsquo;s hardest questions.
             <br />
@@ -271,9 +275,9 @@ export default function SignInPage() {
                   {item.icon}
                 </span>
                 <span style={{
-                  fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
-                  fontSize: "12px", fontWeight: 400,
-                  color: "#6d5a8a", letterSpacing: "0.01em",
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                  fontSize: "13px", fontWeight: 400,
+                  color: "#a394c0", letterSpacing: "0.01em",
                 }}>
                   {item.text}
                 </span>

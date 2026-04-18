@@ -47,10 +47,10 @@ export default function YouPage() {
   if (!profile) {
     return (
       <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 32px", textAlign: "center" }}>
-        <p style={{ fontFamily: "var(--font-newsreader), serif", fontSize: "26px", color: "#fff", marginBottom: "8px" }}>
+        <p style={{ fontFamily: "var(--font-newsreader), Georgia, serif", fontSize: "26px", color: "#fff", marginBottom: "8px" }}>
           Your chart awaits.
         </p>
-        <p style={{ fontFamily: "var(--font-manrope), sans-serif", fontSize: "14px", color: "#adaaaa", marginBottom: "36px" }}>
+        <p style={{ fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif", fontSize: "14px", color: "#adaaaa", marginBottom: "36px" }}>
           Complete your cosmic profile to unlock your blueprint.
         </p>
         <Link href="/onboarding" className="btn-primary">Begin →</Link>
@@ -63,7 +63,7 @@ export default function YouPage() {
   const sunMeta    = getSignMeta(profile.sun);
 
   return (
-    <div style={{ minHeight: "100dvh", padding: "56px 24px 108px", maxWidth: "430px", margin: "0 auto" }}>
+    <div style={{ minHeight: "100dvh", padding: "calc(env(safe-area-inset-top, 0px) + 32px) 24px 108px", maxWidth: "430px", margin: "0 auto" }}>
 
       {/* ── Identity Header ─────────────────────────────────── */}
       <div style={{ textAlign: "center", marginBottom: "36px", animation: "revealUp 600ms cubic-bezier(0.16,1,0.3,1) both" }}>
@@ -78,7 +78,7 @@ export default function YouPage() {
         }} />
 
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
+          fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
           letterSpacing: "0.28em", color: "#a78bfa",
           textTransform: "uppercase", marginBottom: "8px",
@@ -86,7 +86,7 @@ export default function YouPage() {
           Your Cosmic Blueprint
         </p>
         <h1 style={{
-          fontFamily: "var(--font-newsreader), serif",
+          fontFamily: "var(--font-newsreader), Georgia, serif",
           fontSize: "38px", fontWeight: 400,
           color: "#ffffff", letterSpacing: "0.02em",
           lineHeight: 1.1, marginBottom: "12px",
@@ -94,7 +94,7 @@ export default function YouPage() {
           {profile.name}
         </h1>
         <p style={{
-          fontFamily: "var(--font-newsreader), serif",
+          fontFamily: "var(--font-newsreader), Georgia, serif",
           fontStyle: "italic",
           fontSize: "16px", color: "#adaaaa",
           lineHeight: 1.6, maxWidth: "280px", margin: "0 auto",
@@ -106,7 +106,7 @@ export default function YouPage() {
       {/* ── The Big Three ────────────────────────────────────── */}
       <div style={{ marginBottom: "28px", animation: "revealUp 650ms cubic-bezier(0.16,1,0.3,1) 80ms both" }}>
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
+          fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
           letterSpacing: "0.22em", color: "#adaaaa",
           textTransform: "uppercase", marginBottom: "14px",
@@ -148,7 +148,7 @@ export default function YouPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "2px" }}>
                   <span style={{
-                    fontFamily: "var(--font-manrope), sans-serif",
+                    fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                     fontSize: "9px", fontWeight: 600,
                     letterSpacing: "0.2em", color: item.accent,
                     textTransform: "uppercase",
@@ -157,7 +157,7 @@ export default function YouPage() {
                   </span>
                   <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "10px" }}>·</span>
                   <span style={{
-                    fontFamily: "var(--font-manrope), sans-serif",
+                    fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                     fontSize: "9px", fontWeight: 400,
                     color: "#494847", letterSpacing: "0.04em",
                   }}>
@@ -165,14 +165,14 @@ export default function YouPage() {
                   </span>
                 </div>
                 <p style={{
-                  fontFamily: "var(--font-newsreader), serif",
+                  fontFamily: "var(--font-newsreader), Georgia, serif",
                   fontSize: "18px", fontWeight: 400,
                   color: "#ffffff", marginBottom: "2px",
                 }}>
                   {item.sign} <span style={{ color: item.meta.color, fontStyle: "italic", fontSize: "14px" }}>— {item.meta.keyword}</span>
                 </p>
                 <p style={{
-                  fontFamily: "var(--font-manrope), sans-serif",
+                  fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                   fontSize: "11px", fontWeight: 300,
                   color: "#777575",
                 }}>
@@ -187,7 +187,7 @@ export default function YouPage() {
       {/* ── Personality Traits ───────────────────────────────── */}
       <div style={{ marginBottom: "28px", animation: "revealUp 650ms cubic-bezier(0.16,1,0.3,1) 160ms both" }}>
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
+          fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
           letterSpacing: "0.22em", color: "#adaaaa",
           textTransform: "uppercase", marginBottom: "14px",
@@ -200,7 +200,7 @@ export default function YouPage() {
             const c = colors[i % colors.length];
             return (
               <span key={trait} style={{
-                fontFamily: "var(--font-manrope), sans-serif",
+                fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                 fontSize: "12px", fontWeight: 500,
                 letterSpacing: "0.04em",
                 color: c,
@@ -219,7 +219,7 @@ export default function YouPage() {
       {/* ── Life Phase / Dasha ───────────────────────────────── */}
       <div style={{ marginBottom: "28px", animation: "revealUp 650ms cubic-bezier(0.16,1,0.3,1) 240ms both" }}>
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
+          fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
           letterSpacing: "0.22em", color: "#adaaaa",
           textTransform: "uppercase", marginBottom: "14px",
@@ -236,14 +236,14 @@ export default function YouPage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
             <p style={{
-              fontFamily: "var(--font-newsreader), serif",
+              fontFamily: "var(--font-newsreader), Georgia, serif",
               fontSize: "20px", fontWeight: 400, color: "#ffffff",
             }}>
               {profile.dasha}
             </p>
             {profile.dashaEnd && (
               <span style={{
-                fontFamily: "var(--font-manrope), sans-serif",
+                fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                 fontSize: "10px", fontWeight: 500,
                 color: "#a78bfa", letterSpacing: "0.08em",
                 background: "rgba(167,139,250,0.08)",
@@ -257,7 +257,7 @@ export default function YouPage() {
           </div>
           {profile.dashaDescription && (
             <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
+              fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
               fontSize: "13px", fontWeight: 300,
               color: "#adaaaa", lineHeight: 1.65,
             }}>
@@ -270,7 +270,7 @@ export default function YouPage() {
       {/* ── Insights ────────────────────────────────────────── */}
       <div style={{ animation: "revealUp 650ms cubic-bezier(0.16,1,0.3,1) 320ms both" }}>
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
+          fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
           fontSize: "10px", fontWeight: 600,
           letterSpacing: "0.22em", color: "#adaaaa",
           textTransform: "uppercase", marginBottom: "14px",
@@ -297,7 +297,7 @@ export default function YouPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                 <span style={{ color: block.accent, fontSize: "12px" }}>{block.icon}</span>
                 <span style={{
-                  fontFamily: "var(--font-manrope), sans-serif",
+                  fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                   fontSize: "10px", fontWeight: 600,
                   letterSpacing: "0.2em", color: block.accent,
                   textTransform: "uppercase",
@@ -306,7 +306,7 @@ export default function YouPage() {
                 </span>
               </div>
               <p style={{
-                fontFamily: "var(--font-newsreader), serif",
+                fontFamily: "var(--font-newsreader), Georgia, serif",
                 fontSize: "16px", fontWeight: 400,
                 color: "#ffffff", lineHeight: 1.7,
               }}>
@@ -322,7 +322,7 @@ export default function YouPage() {
         <Link
           href="/settings"
           style={{
-            fontFamily: "var(--font-manrope), sans-serif",
+            fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
             fontSize: "10px", fontWeight: 500,
             letterSpacing: "0.2em", color: "#494847",
             textTransform: "uppercase", textDecoration: "none",

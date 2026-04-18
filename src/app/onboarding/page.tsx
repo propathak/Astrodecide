@@ -115,13 +115,13 @@ function WheelColumn({
         {/* Top fade */}
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: "38%",
-          background: "linear-gradient(to bottom, rgba(19,19,19,0.98) 0%, transparent 100%)",
+          background: "linear-gradient(to bottom, rgba(7,4,14,0.98) 0%, transparent 100%)",
           pointerEvents: "none", zIndex: 3,
         }} />
         {/* Bottom fade */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0, height: "38%",
-          background: "linear-gradient(to top, rgba(19,19,19,0.98) 0%, transparent 100%)",
+          background: "linear-gradient(to top, rgba(7,4,14,0.98) 0%, transparent 100%)",
           pointerEvents: "none", zIndex: 3,
         }} />
         {/* Scroll list */}
@@ -186,7 +186,7 @@ function DatePicker({ onConfirm }: { onConfirm: (dob: string) => void }) {
     <div style={{ animation: "slideUp 280ms ease-out" }}>
       <div
         style={{
-          background: "rgba(19,19,19,0.85)",
+          background: "rgba(12,6,28,0.88)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderRadius: "24px",
@@ -216,7 +216,7 @@ function DatePicker({ onConfirm }: { onConfirm: (dob: string) => void }) {
           width: "100%", padding: "14px",
           background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
           border: "none", borderRadius: "999px",
-          color: "#1a0533",
+          color: "#ffffff",
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "13px", fontWeight: 600,
           letterSpacing: "0.08em",
@@ -256,7 +256,7 @@ function TimePicker({ onConfirm }: { onConfirm: (tob: string) => void }) {
     <div style={{ animation: "slideUp 280ms ease-out" }}>
       <div
         style={{
-          background: "rgba(19,19,19,0.85)",
+          background: "rgba(12,6,28,0.88)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderRadius: "24px",
@@ -294,7 +294,7 @@ function TimePicker({ onConfirm }: { onConfirm: (tob: string) => void }) {
           width: "100%", padding: "14px",
           background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
           border: "none", borderRadius: "999px",
-          color: "#1a0533",
+          color: "#ffffff",
           fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "13px", fontWeight: 600,
           letterSpacing: "0.08em",
@@ -473,7 +473,7 @@ function CitySearch({ onConfirm }: { onConfirm: (city: string) => void }) {
             width: "100%", padding: "14px",
             background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
             border: "none", borderRadius: "999px",
-            color: "#1a0533",
+            color: "#ffffff",
             fontFamily: "var(--font-manrope), sans-serif",
             fontSize: "13px", fontWeight: 600,
             letterSpacing: "0.08em", cursor: "pointer",
@@ -617,7 +617,7 @@ export default function OnboardingPage() {
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", maxWidth: "430px", margin: "0 auto", width: "100%" }}>
       {/* Header */}
-      <div style={{ padding: "52px 24px 16px", flexShrink: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+      <div style={{ padding: "calc(env(safe-area-inset-top, 0px) + 16px) 24px 16px", flexShrink: 0, display: "flex", alignItems: "center", gap: "10px" }}>
         <div className="alia-dot" />
         <span style={{
           fontFamily: "var(--font-manrope), sans-serif",
@@ -639,8 +639,8 @@ export default function OnboardingPage() {
             {msg.role === "alia" ? (
               <p style={{
                 fontFamily: "var(--font-newsreader), serif",
-                fontSize: "22px", fontWeight: 400,
-                lineHeight: 1.65, color: "#ffffff",
+                fontSize: "19px", fontWeight: 400,
+                lineHeight: 1.7, color: "#ede9fe",
                 maxWidth: "92%", whiteSpace: "pre-wrap",
                 letterSpacing: "0.01em",
               }}>
@@ -695,9 +695,9 @@ export default function OnboardingPage() {
       <div style={{
         flexShrink: 0,
         padding: "14px 20px calc(32px + env(safe-area-inset-bottom))",
-        background: "rgba(14,14,14,0.9)",
-        backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
-        borderTop: "1px solid rgba(255,255,255,0.04)",
+        background: "rgba(8,4,20,0.94)",
+        backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)",
+        borderTop: "1px solid rgba(167,139,250,0.08)",
       }}>
         {/* Name text input */}
         {showNameInput && (
@@ -745,7 +745,7 @@ export default function OnboardingPage() {
                 style={{
                   width: "46px", height: "46px", borderRadius: "50%",
                   background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
-                  border: "none", color: "#1a0533",
+                  border: "none", color: "#ffffff",
                   fontSize: "18px", fontWeight: 700,
                   cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",

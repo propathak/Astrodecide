@@ -19,16 +19,16 @@ export default function BottomNav() {
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 100,
-        background: "rgba(38,38,38,0.42)",
-        backdropFilter: "blur(28px)",
-        WebkitBackdropFilter: "blur(28px)",
+        background: "rgba(15,8,32,0.82)",
+        backdropFilter: "blur(32px)",
+        WebkitBackdropFilter: "blur(32px)",
         borderRadius: "999px",
-        border: "1px solid rgba(255,255,255,0.07)",
+        border: "1px solid rgba(167,139,250,0.14)",
         display: "flex",
         alignItems: "center",
         padding: "6px 8px",
         gap: "4px",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
+        boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 0 32px rgba(124,58,237,0.08)",
         minWidth: "200px",
         justifyContent: "space-around",
       }}
@@ -47,7 +47,7 @@ export default function BottomNav() {
               textDecoration: "none",
               padding: "8px 32px",
               borderRadius: "999px",
-              background: active ? "rgba(167,139,250,0.08)" : "transparent",
+              background: active ? "rgba(124,58,237,0.18)" : "transparent",
               transition: "background 200ms ease",
               minWidth: "88px",
             }}
@@ -65,11 +65,11 @@ export default function BottomNav() {
             </span>
             <span
               style={{
-                fontFamily: "var(--font-manrope), sans-serif",
+                fontFamily: "var(--font-space-grotesk), sans-serif",
                 fontSize: "9px",
-                fontWeight: active ? 600 : 400,
-                letterSpacing: "0.16em",
-                color: active ? "#a78bfa" : "#494847",
+                fontWeight: active ? 600 : 500,
+                letterSpacing: "0.14em",
+                color: active ? "#c4b5fd" : "#5c4a7a",
                 textTransform: "uppercase",
                 transition: "color 200ms ease",
               }}

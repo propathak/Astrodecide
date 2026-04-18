@@ -61,7 +61,7 @@ export default function AskPage() {
       <div
         style={{
           flexShrink: 0,
-          padding: "48px 24px 14px",
+          padding: "calc(env(safe-area-inset-top, 0px) + 14px) 24px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -123,14 +123,17 @@ export default function AskPage() {
               <>
                 <p
                   style={{
-                    fontFamily: "var(--font-manrope), sans-serif",
-                    fontSize: msg.isGreeting ? "17px" : "15px",
-                    fontWeight: msg.isGreeting ? 400 : 300,
-                    lineHeight: 1.75,
-                    color: "#ffffff",
+                    fontFamily: msg.isGreeting
+                      ? "var(--font-newsreader), serif"
+                      : "var(--font-space-grotesk), sans-serif",
+                    fontSize: msg.isGreeting ? "20px" : "15px",
+                    fontWeight: 400,
+                    fontStyle: msg.isGreeting ? "italic" : "normal",
+                    lineHeight: 1.8,
+                    color: msg.isGreeting ? "#ede9fe" : "#cdc5e8",
                     maxWidth: "100%",
                     whiteSpace: "pre-wrap",
-                    letterSpacing: "0.01em",
+                    letterSpacing: msg.isGreeting ? "0.01em" : "0em",
                   }}
                 >
                   {msg.content
@@ -292,7 +295,7 @@ export default function AskPage() {
                   ? "linear-gradient(135deg, #7c3aed, #a78bfa)"
                   : "rgba(167,139,250,0.04)",
                 border: "none",
-                color: canSend ? "#ffffff" : "#4a3665",
+                color: "#ffffff",
                 fontSize: "17px",
                 cursor: canSend ? "pointer" : "default",
                 flexShrink: 0,
