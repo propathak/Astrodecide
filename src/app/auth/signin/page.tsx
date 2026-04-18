@@ -16,11 +16,13 @@ function nudge(n: number) {
 
 export default function SignInPage() {
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState(() => randomBase());
+  const [users, setUsers] = useState(0);
   const [zodiacIndex, setZodiacIndex] = useState(0);
   const [zodiacVisible, setZodiacVisible] = useState(true);
 
   useEffect(() => {
+    // Init random base only on client to avoid hydration mismatch
+    setUsers(randomBase());
     const id = setInterval(() => setUsers((n) => nudge(n)), 2300);
     return () => clearInterval(id);
   }, []);

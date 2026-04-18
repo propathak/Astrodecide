@@ -24,7 +24,7 @@ function nudge(n: number) {
 export default function CosmicLoader() {
   const [index,   setIndex]   = useState(0);
   const [visible, setVisible] = useState(true);
-  const [users,   setUsers]   = useState(() => randomBase());
+  const [users,   setUsers]   = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -38,6 +38,7 @@ export default function CosmicLoader() {
   }, []);
 
   useEffect(() => {
+    setUsers(randomBase());
     const id = setInterval(() => setUsers((n) => nudge(n)), 2300);
     return () => clearInterval(id);
   }, []);
