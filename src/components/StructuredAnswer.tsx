@@ -14,35 +14,38 @@ interface StructuredAnswerProps {
 
 function ConfidenceMeter({ score }: { score: number }) {
   const level =
-    score >= 70 ? { label: "Proceed", color: "#34d399" } :
-    score >= 40 ? { label: "Caution", color: "#fbbf24" } :
-                  { label: "Wait", color: "#f87171" };
+    score >= 70
+      ? { label: "Proceed", color: "#34d399" }
+      : score >= 40
+      ? { label: "Caution", color: "#fbbf24" }
+      : { label: "Wait", color: "#f87171" };
 
   return (
-    <div style={{ marginBottom: "16px" }}>
+    <div style={{ marginBottom: "18px" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "6px",
+          marginBottom: "8px",
         }}
       >
         <span
           style={{
-            fontFamily: "var(--font-inter), sans-serif",
+            fontFamily: "var(--font-manrope), sans-serif",
             fontSize: "10px",
-            letterSpacing: "0.12em",
+            letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.35)",
+            color: "#777575",
+            fontWeight: 500,
           }}
         >
           Confidence
         </span>
         <span
           style={{
-            fontFamily: "var(--font-inter), sans-serif",
-            fontSize: "13px",
+            fontFamily: "var(--font-newsreader), serif",
+            fontSize: "15px",
             fontWeight: 400,
             color: level.color,
           }}
@@ -53,7 +56,7 @@ function ConfidenceMeter({ score }: { score: number }) {
       <div
         style={{
           height: "3px",
-          background: "rgba(255,255,255,0.07)",
+          background: "rgba(255,255,255,0.06)",
           borderRadius: "2px",
           overflow: "hidden",
         }}
@@ -64,7 +67,8 @@ function ConfidenceMeter({ score }: { score: number }) {
             width: `${score}%`,
             background: level.color,
             borderRadius: "2px",
-            transition: "width 600ms ease-out",
+            transition: "width 700ms ease-out",
+            boxShadow: `0 0 8px ${level.color}60`,
           }}
         />
       </div>
@@ -86,20 +90,21 @@ function ListSection({
   if (!items || items.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: "12px" }}>
+    <div style={{ marginBottom: "14px" }}>
       <p
         style={{
-          fontFamily: "var(--font-inter), sans-serif",
+          fontFamily: "var(--font-manrope), sans-serif",
           fontSize: "10px",
-          letterSpacing: "0.12em",
+          letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.3)",
-          marginBottom: "6px",
+          color: "#777575",
+          marginBottom: "8px",
+          fontWeight: 500,
         }}
       >
         {icon} {title}
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
         {items.map((item, i) => (
           <div
             key={i}
@@ -107,14 +112,16 @@ function ListSection({
               display: "flex",
               alignItems: "flex-start",
               gap: "8px",
-              fontFamily: "var(--font-inter), sans-serif",
+              fontFamily: "var(--font-manrope), sans-serif",
               fontSize: "13px",
               fontWeight: 300,
-              color: "rgba(255,255,255,0.75)",
-              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.72)",
+              lineHeight: 1.55,
             }}
           >
-            <span style={{ color, marginTop: "2px", flexShrink: 0 }}>·</span>
+            <span style={{ color, marginTop: "2px", flexShrink: 0, fontSize: "10px" }}>
+              ●
+            </span>
             {item}
           </div>
         ))}
@@ -127,26 +134,29 @@ export default function StructuredAnswer({ data }: StructuredAnswerProps) {
   return (
     <div
       style={{
-        marginTop: "16px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "16px",
-        padding: "18px",
+        marginTop: "18px",
+        background: "rgba(38,38,38,0.35)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: "20px",
+        padding: "20px",
         animation: "slideUp 300ms ease-out",
       }}
     >
       <ConfidenceMeter score={data.confidenceScore} />
 
       {data.bestTimeWindows && data.bestTimeWindows.length > 0 && (
-        <div style={{ marginBottom: "12px" }}>
+        <div style={{ marginBottom: "16px" }}>
           <p
             style={{
-              fontFamily: "var(--font-inter), sans-serif",
+              fontFamily: "var(--font-manrope), sans-serif",
               fontSize: "10px",
-              letterSpacing: "0.12em",
+              letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.3)",
-              marginBottom: "6px",
+              color: "#777575",
+              marginBottom: "8px",
+              fontWeight: 500,
             }}
           >
             ◷ Best Time Windows
@@ -156,13 +166,15 @@ export default function StructuredAnswer({ data }: StructuredAnswerProps) {
               <span
                 key={i}
                 style={{
-                  background: "rgba(139,92,246,0.1)",
-                  border: "1px solid rgba(139,92,246,0.2)",
-                  borderRadius: "20px",
+                  background: "rgba(167,139,250,0.1)",
+                  border: "1px solid rgba(167,139,250,0.22)",
+                  borderRadius: "999px",
                   padding: "4px 12px",
-                  fontFamily: "var(--font-inter), sans-serif",
+                  fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                   fontSize: "11px",
+                  fontWeight: 500,
                   color: "#a78bfa",
+                  letterSpacing: "0.02em",
                 }}
               >
                 {w}

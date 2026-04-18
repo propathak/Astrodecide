@@ -18,14 +18,23 @@ export default function AmbientBackground() {
     canvas.width = W;
     canvas.height = H;
 
-    const stars = Array.from({ length: 130 }, () => ({
+    // Mix of white, cyan-tinted, and purple-tinted stars
+    const starColors = [
+      "220,215,255", // slight purple-white
+      "180,240,255", // cyan tint
+      "200,220,255", // cool white
+      "210,200,255", // soft purple
+    ];
+
+    const stars = Array.from({ length: 140 }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      r: 0.25 + Math.random() * 1.1,
+      r: 0.2 + Math.random() * 1.0,
       phase: Math.random() * Math.PI * 2,
-      speed: 0.004 + Math.random() * 0.008,
-      dx: (Math.random() - 0.5) * 0.05,
-      dy: (Math.random() - 0.5) * 0.05,
+      speed: 0.003 + Math.random() * 0.007,
+      dx: (Math.random() - 0.5) * 0.04,
+      dy: (Math.random() - 0.5) * 0.04,
+      color: starColors[Math.floor(Math.random() * starColors.length)],
     }));
 
     let tick = 0;
@@ -43,10 +52,10 @@ export default function AmbientBackground() {
         if (s.y < -2) s.y = H + 2;
         if (s.y > H + 2) s.y = -2;
 
-        const a = 0.15 + 0.35 * (0.5 + 0.5 * Math.sin(tick * s.speed + s.phase));
+        const a = 0.12 + 0.3 * (0.5 + 0.5 * Math.sin(tick * s.speed + s.phase));
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(220,215,255,${a})`;
+        ctx.fillStyle = `rgba(${s.color},${a})`;
         ctx.fill();
       }
 
@@ -70,15 +79,67 @@ export default function AmbientBackground() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-        opacity: 0.75,
-      }}
-    />
+    <>
+      {/* Star field canvas */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          opacity: 0.65,
+        }}
+      />
+      {/* ZORI atmospheric orbs — always present as the base ambient layer */}
+      <div
+        style={{
+          position: "fixed",
+          top: "-15%",
+          left: "-12%",
+          width: "620px",
+          height: "620px",
+          background:
+            "radial-gradient(circle, rgba(129,236,255,0.1) 0%, transparent 68%)",
+          borderRadius: "50%",
+          filter: "blur(80px)",
+          animation: "orbFloat 20s ease-in-out infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "-12%",
+          right: "-15%",
+          width: "540px",
+          height: "540px",
+          background:
+            "radial-gradient(circle, rgba(196,127,255,0.09) 0%, transparent 68%)",
+          borderRadius: "50%",
+          filter: "blur(80px)",
+          animation: "orbFloat2 24s ease-in-out infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          top: "35%",
+          right: "5%",
+          width: "380px",
+          height: "380px",
+          background:
+            "radial-gradient(circle, rgba(255,94,214,0.06) 0%, transparent 68%)",
+          borderRadius: "50%",
+          filter: "blur(80px)",
+          animation: "orbFloat3 16s ease-in-out infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+    </>
   );
 }

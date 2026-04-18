@@ -58,25 +58,16 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const prompt = `Generate exactly ${CATEGORIES.length} daily insight statements for ${profileData.name || "this person"} for ${today}.
+    const prompt = `Give ${profileData.name || "this person"} exactly ${CATEGORIES.length} daily insights for ${today}. One per category: ${CATEGORIES.join(", ")}.
 
-Each insight should be:
-- 1-3 sentences maximum
-- Written in second person ("You...")
-- Specific to their chart placements and current transits
-- One per category: ${CATEGORIES.join(", ")}
-- Include which planet/house this relates to
+Rules: 1 sentence each. Second person. Name the specific planet/house. No filler.
 
-Return as JSON array:
-[
-  {"category": "Career", "text": "...", "planet": "Saturn", "house": 10},
-  {"category": "Love", "text": "...", "planet": "Venus", "house": 7},
-  ...
-]`;
+Return JSON only:
+[{"category":"Career","text":"...","planet":"Saturn","house":10},...]`;
 
     const response = await client.messages.create({
       model: "claude-opus-4-6",
-      max_tokens: 1024,
+      max_tokens: 400,
       system: systemPrompt,
       messages: [{ role: "user", content: prompt }],
     });

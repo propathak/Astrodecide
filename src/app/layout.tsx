@@ -1,21 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Newsreader, Manrope, Space_Grotesk } from "next/font/google";
 import AmbientBackground from "@/components/AmbientBackground";
 import SessionProvider from "@/components/SessionProvider";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "700"],
   style: ["normal", "italic"],
-  variable: "--font-playfair",
+  variable: "--font-newsreader",
   display: "swap",
 });
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["300", "400"],
-  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -29,7 +36,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#070710",
+  themeColor: "#0e0e0e",
 };
 
 export default function RootLayout({
@@ -38,8 +45,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full ${playfair.variable} ${inter.variable}`}>
-      <body className="min-h-full antialiased" style={{ background: "#070710", color: "#fff" }}>
+    <html lang="en" className={`h-full ${newsreader.variable} ${manrope.variable} ${spaceGrotesk.variable}`}>
+      <body className="min-h-full antialiased" style={{ background: "#0e0e0e", color: "#fff" }}>
         <AmbientBackground />
         <SessionProvider>
           <div style={{ position: "relative", zIndex: 1 }}>

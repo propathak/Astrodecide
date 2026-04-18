@@ -4,29 +4,30 @@ import { ALIA_SYSTEM_PROMPT, buildChartContext, buildTransitContext } from "@/li
 import { getCurrentTransits, parseBirthDataString } from "@/lib/astrology";
 import { auth } from "@/lib/auth";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp as FsTimestamp } from "firebase-admin/firestore";
 import {
   checkQuota,
   incrementFreeQuestions,
   incrementPaidQuestions,
   FREE_QUESTION_LIMIT,
 } from "@/lib/quota";
+import { appendToSheet } from "@/lib/sheets";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const STRUCTURED_OUTPUT_INSTRUCTION = `
-At the END of your response, after your main answer, append exactly this JSON block on its own line — no markdown, no code fences:
+After your answer, append this JSON block — no markdown, no fences:
 ---STRUCTURED---
-{"confidenceScore":85,"bestTimeWindows":["Next 3 days","After Mars direct"],"do":["Action 1","Action 2"],"avoid":["Thing to avoid"],"wait":["Thing to wait on"]}
+{"confidenceScore":85,"bestTimeWindows":["Next 3 days"],"do":["One action"],"avoid":["One thing"],"wait":[]}
 ---END---
 
-Rules for the JSON block:
-- confidenceScore: 0-100. Above 70 = proceed confidently. 40-70 = proceed with caution. Below 40 = wait.
-- bestTimeWindows: 1-3 specific timing suggestions (days, transits, or windows)
-- do: 1-3 concrete actions to take
-- avoid: 1-2 things to avoid
-- wait: 0-2 things to wait on (can be empty array)
-Always include this block. The user interface will parse and display it separately.`;
+Rules:
+- confidenceScore: 0-100
+- bestTimeWindows: 1-2 items max
+- do: 1-2 items max
+- avoid: 1 item max
+- wait: 0-1 items (usually empty)
+Always include this block.`;
 
 interface StructuredOutput {
   confidenceScore: number;
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: "PAYWALL",
-          message: "You have used your 3 free questions. Upgrade for unlimited access.",
+          message: "You have used your free question. Upgrade for unlimited access.",
           freeQuestionsUsed: quota.freeQuestionsUsed,
         },
         { status: 402 }
@@ -98,25 +99,22 @@ export async function POST(req: NextRequest) {
     let transitContext = "";
     let dashaContext = "";
 
+    const db = getDb();
+
     try {
-      const db = getDb();
       const [userSnap, chartSnap] = await Promise.all([
         db.collection(COLLECTIONS.USERS).doc(userId).get(),
         db.collection(COLLECTIONS.CHARTS).doc(userId).get(),
       ]);
 
       if (userSnap.exists && chartSnap.exists) {
-        const user = userSnap.data()!;
+        const user  = userSnap.data()!;
         const chart = chartSnap.data()!;
         profileData = {
-          name: user.name,
-          dob: user.dob,
-          tob: user.tob,
-          lat: String(user.lat),
-          lon: String(user.lon),
-          tzone: String(user.tzone),
-          chart_data: chart.chartData,
-          dasha_data: chart.dashaData,
+          name:          user.name          ?? "",
+          chart_data:    chart.chartData    ?? "",
+          dasha_data:    chart.dashaData    ?? "",
+          chart_context: chart.chartContext ?? "",
         };
       }
     } catch {
@@ -134,33 +132,62 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (profileData?.dob && profileData?.tob && profileData?.lat && profileData?.lon) {
-      const birthData = parseBirthDataString(
-        profileData.dob,
-        profileData.tob,
-        parseFloat(profileData.lat),
-        parseFloat(profileData.lon),
-        parseFloat(profileData.tzone ?? "5.5")
-      );
-
-      chartContext = profileData.chart_data
-        ? buildChartContext(JSON.parse(profileData.chart_data))
-        : "";
+    if (profileData) {
+      // Use pre-built chartContext stored at onboarding time
+      if (profileData.chart_context) {
+        chartContext = profileData.chart_context;
+      } else if (profileData.chart_data) {
+        try {
+          const cd = JSON.parse(profileData.chart_data);
+          chartContext = cd.chartContext ?? buildChartContext(cd);
+        } catch {
+          chartContext = buildChartContext(profileData.chart_data as unknown as Record<string, unknown>);
+        }
+      }
 
       if (profileData.dasha_data) {
         try {
           const dasha = JSON.parse(profileData.dasha_data);
-          dashaContext = `Current Mahadasha: ${dasha.mahadasha_lord} (ends ${dasha.mahadasha_end})`;
+          const parts = [
+            dasha.mahadasha_lord  ? `Mahadasha: ${dasha.mahadasha_lord} (ends ${dasha.mahadasha_end})`  : "",
+            dasha.antardasha_lord ? `Antardasha: ${dasha.antardasha_lord} (ends ${dasha.antardasha_end})` : "",
+          ].filter(Boolean);
+          dashaContext = parts.join(" | ");
         } catch {
           // ignore
         }
       }
+    }
 
+    // Load 24-hour memory for paid users (last 5 Q&A pairs)
+    let memoryContext = "";
+    if (quota.wasPaid) {
       try {
-        const transits = await getCurrentTransits(birthData);
-        transitContext = buildTransitContext(transits);
+        const since = Date.now() - 24 * 60 * 60 * 1000;
+        const memSnap = await db
+          .collection(COLLECTIONS.QUESTIONS)
+          .where("userId", "==", userId)
+          .where("createdAt", ">=", FsTimestamp.fromMillis(since))
+          .orderBy("createdAt", "desc")
+          .limit(5)
+          .get();
+
+        if (!memSnap.empty) {
+          const pairs = memSnap.docs
+            .reverse()
+            .map((d: FirebaseFirestore.QueryDocumentSnapshot) => {
+              const data = d.data();
+              const cleanAnswer = (data.answer as string)
+                .replace(/---STRUCTURED---[\s\S]*?---END---/g, "")
+                .trim()
+                .slice(0, 300);
+              return `Q: ${data.question}\nA: ${cleanAnswer}`;
+            })
+            .join("\n\n");
+          memoryContext = `\nCONVERSATION MEMORY (last 24 hours):\n${pairs}\n(Reference this context naturally — do not repeat it verbatim.)`;
+        }
       } catch {
-        // transits are optional
+        // Memory load failed — continue without it
       }
     }
 
@@ -170,6 +197,7 @@ export async function POST(req: NextRequest) {
       chartContext,
       transitContext,
       dashaContext ? `\nCURRENT DASHA:\n${dashaContext}` : "",
+      memoryContext,
       category ? `\nThis question relates to: ${category}` : "",
       STRUCTURED_OUTPUT_INSTRUCTION,
     ]
@@ -183,7 +211,7 @@ export async function POST(req: NextRequest) {
 
     const stream = await client.messages.stream({
       model: "claude-opus-4-6",
-      max_tokens: 1500,
+      max_tokens: 600,
       system: systemPrompt,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
     });
@@ -230,15 +258,11 @@ export async function POST(req: NextRequest) {
             incrementFreeQuestions(userId).catch(console.error);
           }
 
-          fetch(`${process.env.NEXTAUTH_URL}/api/log`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              event: "question",
-              userId,
-              email: session.user.email ?? "",
-              meta: { question: questionText, category: category ?? "" },
-            }),
+          appendToSheet({
+            event: "question",
+            userId,
+            email: session.user.email ?? "",
+            meta: { question: questionText, category: category ?? "" },
           }).catch(() => {});
         } catch (err) {
           controller.error(err);

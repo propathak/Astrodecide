@@ -1,6 +1,6 @@
 "use client";
 
-const FREE_QUESTION_LIMIT = 3;
+const FREE_QUESTION_LIMIT = 1;
 
 interface QuestionCounterProps {
   used: number;
@@ -15,84 +15,47 @@ export default function QuestionCounter({
   passExpiresAt,
   onUpgrade,
 }: QuestionCounterProps) {
+  // Paid — show hours remaining
   if (isPaid && passExpiresAt) {
-    const expiresDate = new Date(passExpiresAt);
     const hoursLeft = Math.max(
       0,
-      Math.round((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60))
+      Math.round((new Date(passExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60))
     );
-
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          fontFamily: "var(--font-inter), sans-serif",
-          fontSize: "11px",
-          color: "rgba(167,139,250,0.8)",
-          letterSpacing: "0.04em",
-        }}
-      >
-        <span style={{ color: "#a78bfa" }}>✦</span>
+      <div style={{
+        display: "flex", alignItems: "center", gap: "6px",
+        fontFamily: "var(--font-manrope), sans-serif",
+        fontSize: "11px", fontWeight: 500,
+        color: "rgba(129,236,255,0.75)", letterSpacing: "0.04em",
+      }}>
+        <span style={{ color: "#81ecff" }}>✦</span>
         Unlimited · {hoursLeft}h left
       </div>
     );
   }
 
-  const remaining = Math.max(0, FREE_QUESTION_LIMIT - used);
-  const dots = Array.from({ length: FREE_QUESTION_LIMIT }, (_, i) => i < used);
-
-  if (remaining === 0) {
+  // Out of free questions — show upgrade button
+  if (used >= FREE_QUESTION_LIMIT) {
     return (
       <button
         onClick={onUpgrade}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          background: "rgba(139,92,246,0.12)",
-          border: "1px solid rgba(139,92,246,0.25)",
-          borderRadius: "20px",
-          padding: "5px 12px",
-          color: "#a78bfa",
-          fontFamily: "var(--font-inter), sans-serif",
-          fontSize: "11px",
-          cursor: "pointer",
-          letterSpacing: "0.04em",
+          display: "flex", alignItems: "center", gap: "6px",
+          background: "rgba(129,236,255,0.08)",
+          border: "1px solid rgba(129,236,255,0.22)",
+          borderRadius: "999px", padding: "5px 14px",
+          color: "#81ecff",
+          fontFamily: "var(--font-manrope), sans-serif",
+          fontSize: "11px", fontWeight: 500,
+          cursor: "pointer", letterSpacing: "0.06em",
+          transition: "background 180ms ease",
         }}
       >
-        ✦ Upgrade ₹50/day
+        ✦ Upgrade
       </button>
     );
   }
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        fontFamily: "var(--font-inter), sans-serif",
-        fontSize: "11px",
-        color: "rgba(255,255,255,0.35)",
-        letterSpacing: "0.04em",
-      }}
-    >
-      <span style={{ display: "flex", gap: "3px" }}>
-        {dots.map((used, i) => (
-          <span
-            key={i}
-            style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              background: used ? "rgba(255,255,255,0.25)" : "rgba(167,139,250,0.7)",
-            }}
-          />
-        ))}
-      </span>
-      {remaining} free {remaining === 1 ? "question" : "questions"} left
-    </div>
-  );
+  // Free tier, questions still available — show nothing
+  return null;
 }

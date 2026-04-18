@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useRef } from "react";
+import { useOracle } from "@/contexts/OracleContext";
 import QuestionCounter from "@/components/QuestionCounter";
 import PaywallModal from "@/components/PaywallModal";
 import StructuredAnswer from "@/components/StructuredAnswer";
+import CosmicLoader from "@/components/CosmicLoader";
 
 const QUICK_ACTIONS = [
   "What's blocking me today?",
@@ -17,269 +18,69 @@ const QUICK_ACTIONS = [
 
 const CATEGORIES = ["CAREER", "LOVE", "MONEY", "FAMILY", "TRAVEL", "HEALTH", "TIMING"];
 
-interface StructuredData {
-  confidenceScore: number;
-  bestTimeWindows: string[];
-  do: string[];
-  avoid: string[];
-  wait: string[];
-}
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  isGreeting?: boolean;
-  structured?: StructuredData;
-}
-
-function getTimeOfDay(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  return "evening";
-}
-
-// Strip ---STRUCTURED---...---END--- block from displayed text
-function stripStructuredBlock(text: string): string {
-  const startTag = "---STRUCTURED---";
-  const endTag = "---END---";
-  const startIdx = text.indexOf(startTag);
-  if (startIdx === -1) return text;
-  const endIdx = text.indexOf(endTag);
-  if (endIdx === -1) return text.slice(0, startIdx).trim();
-  return text.slice(0, startIdx).trim();
-}
-
 export default function AskPage() {
-  const { data: session } = useSession();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    messages,
+    loading,
+    activeCategory,
+    showQuickActions,
+    showCategoryBar,
+    questionsUsed,
+    isPaid,
+    passExpiresAt,
+    showPaywall,
+    setActiveCategory,
+    setShowPaywall,
+    setIsPaid,
+    setPassExpiresAt,
+    sendMessage,
+    messagesEndRef,
+  } = useOracle();
+
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showCategoryBar, setShowCategoryBar] = useState(false);
-
-  // Quota state
-  const [questionsUsed, setQuestionsUsed] = useState(0);
-  const [isPaid, setIsPaid] = useState(false);
-  const [passExpiresAt, setPassExpiresAt] = useState<string | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Fetch quota on mount
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    fetch("/api/quota")
-      .then((r) => r.json())
-      .then((data) => {
-        setQuestionsUsed(data.freeQuestionsUsed ?? 0);
-        setIsPaid(data.paymentStatus === "active" && !!data.passExpiresAt);
-        setPassExpiresAt(data.passExpiresAt ?? null);
-      })
-      .catch(() => {});
-  }, [session]);
-
-  // Proactive greeting
-  useEffect(() => {
-    if (initialized) return;
-    setInitialized(true);
-    setLoading(true);
-
-    fetch("/api/daily")
-      .then((r) => r.json())
-      .then((data) => {
-        const insights: { text: string }[] = data.insights ?? [];
-        const text =
-          insights.length > 0
-            ? `Good ${getTimeOfDay()} ✦\n\n${insights[0].text
-                .replace(/\*\*(.*?)\*\*/g, "$1")
-                .replace(/__(.*?)__/g, "$1")}`
-            : `Good ${getTimeOfDay()} ✦\n\nThe stars are aligned and ready to guide you. What's on your mind?`;
-
-        setMessages([
-          {
-            id: "greeting",
-            role: "assistant",
-            content: text,
-            timestamp: new Date(),
-            isGreeting: true,
-          },
-        ]);
-        setShowQuickActions(true);
-      })
-      .catch(() => {
-        setMessages([
-          {
-            id: "greeting",
-            role: "assistant",
-            content: `Good ${getTimeOfDay()} ✦\n\nThe stars are ready. What's on your mind?`,
-            timestamp: new Date(),
-            isGreeting: true,
-          },
-        ]);
-        setShowQuickActions(true);
-      })
-      .finally(() => setLoading(false));
-  }, [initialized]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  async function sendMessage(text: string) {
-    if (!text.trim() || loading) return;
-    setShowQuickActions(false);
-    setShowCategoryBar(true);
-
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+  async function handleSend(text: string) {
+    if (!text.trim()) return;
     setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          category: activeCategory,
-        }),
-      });
-
-      // Paywall hit
-      if (res.status === 402) {
-        setShowPaywall(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!res.ok) throw new Error("API error");
-
-      // Update quota from response headers
-      const xUsed = res.headers.get("X-Questions-Used");
-      const xPaid = res.headers.get("X-Was-Paid");
-      if (xUsed) setQuestionsUsed(parseInt(xUsed, 10));
-      if (xPaid === "0") setIsPaid(false);
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = "";
-      let structuredData: StructuredData | undefined;
-
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-
-                // Structured output event
-                if (parsed.structured) {
-                  structuredData = parsed.structured;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsg.id
-                        ? { ...m, structured: structuredData }
-                        : m
-                    )
-                  );
-                  continue;
-                }
-
-                const delta = parsed.delta?.text ?? parsed.text ?? "";
-                assistantText += delta;
-                const displayText = stripStructuredBlock(assistantText);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsg.id
-                      ? { ...m, content: displayText }
-                      : m
-                  )
-                );
-              } catch {
-                // skip non-JSON
-              }
-            }
-          }
-        }
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "The stars are momentarily obscured. Please try again.",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+    await sendMessage(text);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(input);
+      handleSend(input);
     }
   }
 
+  const canSend = !loading && input.trim().length > 0;
+
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Header */}
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", zIndex: 0 }}>
+      {/* ── Header ────────────────────────────────────────────── */}
       <div
         style={{
-          padding: "48px 24px 12px",
           flexShrink: 0,
+          padding: "48px 24px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          background: "rgba(8,4,20,0.88)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderBottom: "1px solid rgba(167,139,250,0.07)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="alia-dot" />
           <span
             style={{
-              fontFamily: "var(--font-inter), sans-serif",
-              fontSize: "11px",
-              fontWeight: 300,
-              letterSpacing: "0.22em",
-              color: "#9090A8",
+              fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.28em",
+              color: "#a78bfa",
+              textTransform: "uppercase",
             }}
           >
             ALIA
@@ -294,7 +95,7 @@ export default function AskPage() {
         />
       </div>
 
-      {/* Messages */}
+      {/* ── Messages ──────────────────────────────────────────── */}
       <div
         style={{
           flex: 1,
@@ -302,25 +103,11 @@ export default function AskPage() {
           padding: "8px 24px 16px",
           display: "flex",
           flexDirection: "column",
-          gap: "22px",
+          gap: "24px",
         }}
       >
-        {/* Initial loading */}
-        {loading && messages.length === 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: "5px",
-              alignItems: "center",
-              padding: "8px 0",
-              animation: "fadeIn 200ms ease-out",
-            }}
-          >
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="typing-dot" style={{ animationDelay: `${i * 0.2}s` }} />
-            ))}
-          </div>
-        )}
+        {/* Initial loading — cosmic uplift */}
+        {loading && messages.length === 0 && <CosmicLoader />}
 
         {messages.map((msg) => (
           <div
@@ -336,10 +123,10 @@ export default function AskPage() {
               <>
                 <p
                   style={{
-                    fontFamily: "var(--font-playfair), serif",
-                    fontSize: msg.isGreeting ? "22px" : "19px",
-                    fontWeight: 400,
-                    lineHeight: 1.72,
+                    fontFamily: "var(--font-manrope), sans-serif",
+                    fontSize: msg.isGreeting ? "17px" : "15px",
+                    fontWeight: msg.isGreeting ? 400 : 300,
+                    lineHeight: 1.75,
                     color: "#ffffff",
                     maxWidth: "100%",
                     whiteSpace: "pre-wrap",
@@ -355,14 +142,16 @@ export default function AskPage() {
             ) : (
               <div
                 style={{
-                  background: "rgba(139,92,246,0.1)",
-                  border: "1px solid rgba(139,92,246,0.2)",
+                  background: "rgba(20,10,50,0.55)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(167,139,250,0.12)",
                   borderRadius: "20px 20px 5px 20px",
                   padding: "12px 18px",
-                  fontFamily: "var(--font-inter), sans-serif",
+                  fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
                   fontSize: "14px",
-                  fontWeight: 300,
-                  color: "#ddddf5",
+                  fontWeight: 400,
+                  color: "#ede9fe",
                   maxWidth: "80%",
                   lineHeight: 1.62,
                 }}
@@ -373,7 +162,7 @@ export default function AskPage() {
           </div>
         ))}
 
-        {/* Quick action chips after greeting */}
+        {/* Quick action chips */}
         {showQuickActions && !loading && (
           <div
             style={{
@@ -385,7 +174,7 @@ export default function AskPage() {
             }}
           >
             {QUICK_ACTIONS.map((action) => (
-              <button key={action} onClick={() => sendMessage(action)} className="chip">
+              <button key={action} onClick={() => handleSend(action)} className="chip">
                 {action}
               </button>
             ))}
@@ -404,26 +193,34 @@ export default function AskPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
+      {/* ── Input area ────────────────────────────────────────── */}
       <div
         style={{
           flexShrink: 0,
-          background: "rgba(7,7,16,0.88)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          paddingBottom: "calc(68px + env(safe-area-inset-bottom))",
+          background: "rgba(8,4,20,0.92)",
+          backdropFilter: "blur(28px)",
+          WebkitBackdropFilter: "blur(28px)",
+          borderTop: "1px solid rgba(167,139,250,0.07)",
+          paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
         }}
       >
         {/* Category chips */}
         {showCategoryBar && (
-          <div style={{ padding: "10px 16px 6px", display: "flex", gap: "6px", overflowX: "auto" }}>
+          <div
+            style={{
+              padding: "10px 16px 6px",
+              display: "flex",
+              gap: "6px",
+              overflowX: "auto",
+              scrollbarWidth: "none",
+            }}
+          >
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                 className={`chip${activeCategory === cat ? " active" : ""}`}
-                style={{ fontSize: "10px", padding: "5px 12px" }}
+                style={{ fontSize: "10px", padding: "5px 12px", letterSpacing: "0.08em" }}
               >
                 {cat}
               </button>
@@ -432,49 +229,85 @@ export default function AskPage() {
         )}
 
         {/* Text input row */}
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", padding: "8px 16px 10px" }}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask the stars anything..."
-            rows={1}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: "10px",
+            padding: "8px 16px 12px",
+          }}
+        >
+          <div
             style={{
               flex: 1,
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "24px",
-              padding: "12px 18px",
-              color: "#fff",
-              fontFamily: "var(--font-inter), sans-serif",
-              fontSize: "15px",
-              fontWeight: 300,
-              resize: "none",
-              lineHeight: 1.5,
-            }}
-          />
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={loading || !input.trim()}
-            style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "50%",
-              background: loading || !input.trim() ? "rgba(255,255,255,0.04)" : "rgba(139,92,246,0.24)",
-              border: `1px solid ${loading || !input.trim() ? "rgba(255,255,255,0.06)" : "rgba(139,92,246,0.45)"}`,
-              color: loading || !input.trim() ? "#3D3D52" : "#ffffff",
-              fontSize: "18px",
-              cursor: loading || !input.trim() ? "default" : "pointer",
-              flexShrink: 0,
+              background: "rgba(20,10,45,0.6)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              borderRadius: "20px",
+              border: "1px solid rgba(167,139,250,0.1)",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 150ms ease",
+              alignItems: "flex-end",
+              padding: "4px 4px 4px 16px",
+              transition: "border-color 200ms ease",
             }}
+            onFocusCapture={(e) =>
+              ((e.currentTarget as HTMLDivElement).style.borderColor =
+                "rgba(167,139,250,0.32)")
+            }
+            onBlurCapture={(e) =>
+              ((e.currentTarget as HTMLDivElement).style.borderColor =
+                "rgba(167,139,250,0.1)")
+            }
           >
-            →
-          </button>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask the stars anything..."
+              rows={1}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                padding: "10px 0",
+                color: "#fff",
+                fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
+                fontSize: "15px",
+                fontWeight: 400,
+                resize: "none",
+                lineHeight: 1.5,
+                maxHeight: "120px",
+                overflowY: "auto",
+              }}
+            />
+            <button
+              onClick={() => handleSend(input)}
+              disabled={!canSend}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "16px",
+                background: canSend
+                  ? "linear-gradient(135deg, #7c3aed, #a78bfa)"
+                  : "rgba(167,139,250,0.04)",
+                border: "none",
+                color: canSend ? "#ffffff" : "#4a3665",
+                fontSize: "17px",
+                cursor: canSend ? "pointer" : "default",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 180ms ease",
+                boxShadow: canSend ? "0 0 20px rgba(124,58,237,0.45)" : "none",
+                fontWeight: 700,
+                marginBottom: "1px",
+              }}
+            >
+              →
+            </button>
+          </div>
         </div>
       </div>
 

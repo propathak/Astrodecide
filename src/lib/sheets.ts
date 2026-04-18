@@ -49,9 +49,11 @@ export async function appendToSheet(payload: LogPayload): Promise<void> {
     payload.meta?.pob ?? "",
   ];
 
+  const tab = process.env.GOOGLE_SHEETS_TAB_NAME ?? "Events";
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-    range: "Events!A:I",
+    range: `${tab}!A:I`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [row] },
   });

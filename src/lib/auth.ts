@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth.config";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { FieldValue } from "firebase-admin/firestore";
+import { appendToSheet } from "@/lib/sheets";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -39,16 +40,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
-        // Fire-and-forget: log login to Sheets
-        fetch(`${process.env.NEXTAUTH_URL}/api/log`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event: "login",
-            userId,
-            email: user.email,
-            meta: {},
-          }),
+        appendToSheet({
+          event: "login",
+          userId,
+          email: user.email,
         }).catch(() => {});
       } catch (err) {
         console.error("signIn Firestore error:", err);

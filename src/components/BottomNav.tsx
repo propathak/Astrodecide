@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/ask", label: "ALIA", symbol: "✦" },
-  { href: "/chart", label: "CHART", symbol: "◎" },
-  { href: "/you", label: "YOU", symbol: "◇" },
+  { href: "/ask",  label: "Oracle", symbol: "✦" },
+  { href: "/you",  label: "You",    symbol: "◇" },
 ];
 
 export default function BottomNav() {
@@ -16,20 +15,22 @@ export default function BottomNav() {
     <nav
       style={{
         position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
         zIndex: 100,
-        background: "rgba(7,7,16,0.88)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(38,38,38,0.42)",
+        backdropFilter: "blur(28px)",
+        WebkitBackdropFilter: "blur(28px)",
+        borderRadius: "999px",
+        border: "1px solid rgba(255,255,255,0.07)",
         display: "flex",
-        justifyContent: "space-around",
         alignItems: "center",
-        padding: "10px 0 calc(10px + env(safe-area-inset-bottom))",
-        maxWidth: "430px",
-        margin: "0 auto",
+        padding: "6px 8px",
+        gap: "4px",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
+        minWidth: "200px",
+        justifyContent: "space-around",
       }}
     >
       {NAV.map((item) => {
@@ -42,17 +43,21 @@ export default function BottomNav() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "5px",
+              gap: "4px",
               textDecoration: "none",
-              padding: "4px 24px",
+              padding: "8px 32px",
+              borderRadius: "999px",
+              background: active ? "rgba(129,236,255,0.08)" : "transparent",
+              transition: "background 200ms ease",
+              minWidth: "88px",
             }}
           >
             <span
               style={{
-                fontSize: "15px",
-                color: active ? "#8B5CF6" : "#3D3D52",
-                filter: active ? "drop-shadow(0 0 8px rgba(139,92,246,0.75))" : "none",
-                transition: "color 180ms ease, filter 180ms ease",
+                fontSize: "14px",
+                color: active ? "#81ecff" : "#494847",
+                filter: active ? "drop-shadow(0 0 8px rgba(129,236,255,0.8))" : "none",
+                transition: "color 200ms ease, filter 200ms ease",
                 lineHeight: 1,
               }}
             >
@@ -60,12 +65,13 @@ export default function BottomNav() {
             </span>
             <span
               style={{
-                fontFamily: "var(--font-inter), sans-serif",
+                fontFamily: "var(--font-manrope), sans-serif",
                 fontSize: "9px",
-                fontWeight: 300,
-                letterSpacing: "0.18em",
-                color: active ? "#e8e8ff" : "#3D3D52",
-                transition: "color 180ms ease",
+                fontWeight: active ? 600 : 400,
+                letterSpacing: "0.16em",
+                color: active ? "#81ecff" : "#494847",
+                textTransform: "uppercase",
+                transition: "color 200ms ease",
               }}
             >
               {item.label}

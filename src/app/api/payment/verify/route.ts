@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { verifyPaymentSignature, PASS_DURATION_MS } from "@/lib/razorpay";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { appendToSheet } from "@/lib/sheets";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,16 +47,11 @@ export async function POST(req: NextRequest) {
       passExpiresAt,
     });
 
-    // Fire-and-forget log
-    fetch(`${process.env.NEXTAUTH_URL}/api/log`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "payment_success",
-        userId,
-        email: session.user.email ?? "",
-        meta: { amount: 50 },
-      }),
+    await appendToSheet({
+      event: "payment_success",
+      userId,
+      email: session.user.email ?? "",
+      meta: { amount: 50 },
     }).catch(() => {});
 
     return NextResponse.json({

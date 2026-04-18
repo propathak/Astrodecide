@@ -1,7 +1,7 @@
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-export const FREE_QUESTION_LIMIT = 3;
+export const FREE_QUESTION_LIMIT = 1;
 export const PASS_PRICE_PAISE = 5000; // ₹50
 
 export type QuotaStatus =

@@ -28,10 +28,12 @@ export function getDb(): Firestore {
 
 // Firestore collection references
 export const COLLECTIONS = {
-  USERS: "users",
-  CHARTS: "charts",
-  QUESTIONS: "questions",
-  PAYMENTS: "payments",
+  USERS:         "users",
+  CHARTS:        "charts",
+  QUESTIONS:     "questions",
+  PAYMENTS:      "payments",
+  COUPONS:       "coupons",
+  CONVERSATIONS: "conversations",
 } as const;
 
 // User document shape
