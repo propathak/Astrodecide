@@ -39,6 +39,7 @@ interface OracleState {
   isPaid:           boolean;
   passExpiresAt:    string | null;
   showPaywall:      boolean;
+  lastUserMessage:  string;
 
   setActiveCategory:   (c: string | null) => void;
   setShowPaywall:      (v: boolean) => void;
@@ -46,6 +47,7 @@ interface OracleState {
   setPassExpiresAt:    (v: string | null) => void;
   setQuestionsUsed:    (v: number) => void;
   sendMessage:         (text: string) => Promise<void>;
+  retryLastMessage:    () => Promise<void>;
   messagesEndRef:      React.RefObject<HTMLDivElement | null>;
 }
 
@@ -96,6 +98,7 @@ export function OracleProvider({ children }: { children: ReactNode }) {
   const [isPaid,           setIsPaid]           = useState(false);
   const [passExpiresAt,    setPassExpiresAt]    = useState<string | null>(null);
   const [showPaywall,      setShowPaywall]      = useState(false);
+  const [lastUserMessage,  setLastUserMessage]  = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -109,7 +112,7 @@ export function OracleProvider({ children }: { children: ReactNode }) {
         setIsPaid(d.paymentStatus === "active" && !!d.passExpiresAt);
         setPassExpiresAt(d.passExpiresAt ?? null);
       })
-      .catch(() => {});
+      .catch((err) => console.error("Quota fetch failed:", err));
   }, [session?.user?.id]);
 
   // Load greeting + prior history once — never again on tab switch
@@ -147,7 +150,7 @@ export function OracleProvider({ children }: { children: ReactNode }) {
         const resumeNote: Message = {
           id: "resume-note",
           role: "assistant",
-          content: `Welcome back ✦\n\nPicking up where we left off — you have ${Math.floor(priorMessages.length / 2)} question${priorMessages.length / 2 !== 1 ? "s" : ""} from today.`,
+          content: `Welcome back ✦\n\nPicking up where we left off — you have ${priorMessages.filter(m => m.role === "user").length} question${priorMessages.filter(m => m.role === "user").length !== 1 ? "s" : ""} from today.`,
           timestamp: new Date(),
           isGreeting: true,
         };
@@ -169,6 +172,7 @@ export function OracleProvider({ children }: { children: ReactNode }) {
     if (!text.trim() || loading) return;
     setShowQuickActions(false);
     setShowCategoryBar(true);
+    setLastUserMessage(text.trim());
 
     const userMsg: Message = {
       id:        crypto.randomUUID(),
@@ -185,12 +189,16 @@ export function OracleProvider({ children }: { children: ReactNode }) {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+          messages: [...messages, userMsg]
+            .filter((m) => m.id !== "greeting" && m.id !== "resume-note")
+            .map((m) => ({ role: m.role, content: m.content })),
           category: activeCategory,
         }),
       });
 
       if (res.status === 402) {
+        // Remove the user's message — it never got answered
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
         setShowPaywall(true);
         setLoading(false);
         return;
@@ -244,12 +252,24 @@ export function OracleProvider({ children }: { children: ReactNode }) {
     }
   }, [loading, messages, activeCategory]);
 
+  const retryLastMessage = useCallback(async () => {
+    if (!lastUserMessage) return;
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.role === "assistant" && last.content === "The stars are momentarily obscured. Please try again.") {
+        return prev.slice(0, -1);
+      }
+      return prev;
+    });
+    await sendMessage(lastUserMessage);
+  }, [lastUserMessage, sendMessage]);
+
   return (
     <OracleContext.Provider value={{
       messages, loading, activeCategory, showQuickActions, showCategoryBar,
-      questionsUsed, isPaid, passExpiresAt, showPaywall,
+      questionsUsed, isPaid, passExpiresAt, showPaywall, lastUserMessage,
       setActiveCategory, setShowPaywall, setIsPaid, setPassExpiresAt, setQuestionsUsed,
-      sendMessage, messagesEndRef,
+      sendMessage, retryLastMessage, messagesEndRef,
     }}>
       {children}
     </OracleContext.Provider>

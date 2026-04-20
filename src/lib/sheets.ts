@@ -11,6 +11,8 @@ interface LogPayload {
     category?: string;
     amount?: number;
     name?: string;
+    dob?: string;
+    tob?: string;
     pob?: string;
   };
 }
@@ -46,6 +48,8 @@ export async function appendToSheet(payload: LogPayload): Promise<void> {
     payload.meta?.category ?? "",
     payload.meta?.amount ?? "",
     payload.meta?.name ?? "",
+    payload.meta?.dob ?? "",
+    payload.meta?.tob ?? "",
     payload.meta?.pob ?? "",
   ];
 
@@ -53,7 +57,7 @@ export async function appendToSheet(payload: LogPayload): Promise<void> {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
-    range: `${tab}!A:I`,
+    range: `${tab}!A:K`,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [row] },
   });

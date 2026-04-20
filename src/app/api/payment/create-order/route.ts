@@ -1,28 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getRazorpay, PASS_AMOUNT_PAISE } from "@/lib/razorpay";
+import { getRazorpay, PLANS, PassPlan } from "@/lib/razorpay";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { FieldValue } from "firebase-admin/firestore";
 import { appendToSheet } from "@/lib/sheets";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const plan: PassPlan = (body.plan && PLANS[body.plan as PassPlan]) ? (body.plan as PassPlan) : "daily";
+    const planConfig = PLANS[plan];
+
     const userId = session.user.id;
     const razorpay = getRazorpay();
 
     const order = await razorpay.orders.create({
-      amount: PASS_AMOUNT_PAISE,
+      amount: planConfig.amountPaise,
       currency: "INR",
       receipt: `pass_${userId}_${Date.now()}`,
-      notes: { userId, passType: "daily" },
+      notes: { userId, passType: plan, durationMs: String(planConfig.durationMs) },
     });
 
-    // Record in Firestore
+    // Record in Firestore (store durationMs so verify route can use it)
     const db = getDb();
     await db
       .collection(COLLECTIONS.PAYMENTS)
@@ -32,10 +36,11 @@ export async function POST() {
         orderId: order.id,
         paymentId: null,
         signature: null,
-        amount: PASS_AMOUNT_PAISE,
+        amount: planConfig.amountPaise,
         currency: "INR",
         status: "created",
-        passType: "daily",
+        passType: plan,
+        durationMs: planConfig.durationMs,
         createdAt: FieldValue.serverTimestamp(),
         paidAt: null,
       });
@@ -44,12 +49,12 @@ export async function POST() {
       event: "payment_initiated",
       userId,
       email: session.user.email ?? "",
-      meta: { amount: 50 },
+      meta: { amount: planConfig.amountPaise / 100 },
     }).catch(() => {});
 
     return NextResponse.json({
       orderId: order.id,
-      amount: PASS_AMOUNT_PAISE,
+      amount: planConfig.amountPaise,
       currency: "INR",
       keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     });

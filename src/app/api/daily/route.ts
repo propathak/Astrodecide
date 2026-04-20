@@ -91,16 +91,8 @@ Return JSON only:
         }));
       }
     } catch {
-      // Return raw text as single insight fallback
-      insights = [
-        {
-          id: `${today}-0`,
-          text: textBlock.text,
-          planet: "Sun",
-          house: 1,
-          category: "Today",
-        },
-      ];
+      // JSON parse failed — return empty so UI falls back to default greeting
+      insights = [];
     }
 
     return NextResponse.json({ insights });

@@ -147,6 +147,15 @@ textarea::placeholder {
   color: #5c4a7a;
 }
 
+/* ── Upgrade button pulse glow ──────────────────────────────── */
+@keyframes upgradeGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(167,139,250,0.5), 0 0 20px rgba(124,58,237,0.25); border-color: rgba(167,139,250,0.45); }
+  50%       { box-shadow: 0 0 16px rgba(167,139,250,0.9), 0 0 40px rgba(124,58,237,0.5); border-color: rgba(167,139,250,0.9); }
+}
+.upgrade-glow {
+  animation: upgradeGlow 2s ease-in-out infinite;
+}
+
 /* ── ALIA glowing dot (violet) ──────────────────────────────── */
 .alia-dot {
   width: 8px;

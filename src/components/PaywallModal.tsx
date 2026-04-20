@@ -5,6 +5,15 @@ import { useSession } from "next-auth/react";
 
 const OFFER_SECONDS = 10 * 60; // 10 minutes
 
+type Plan = "daily" | "weekly" | "monthly" | "yearly";
+
+const PLANS: Record<Plan, { label: string; duration: string; price: string; original: string; saving: string; popular?: boolean }> = {
+  daily:   { label: "24 Hours",  duration: "24-hour access",   price: "₹49",    original: "₹99",    saving: "50% off" },
+  weekly:  { label: "1 Week",    duration: "7-day access",     price: "₹299",   original: "₹599",   saving: "50% off", popular: true },
+  monthly: { label: "1 Month",   duration: "30-day access",    price: "₹499",   original: "₹999",   saving: "50% off" },
+  yearly:  { label: "1 Year",    duration: "365-day access",   price: "₹1,999", original: "₹3,999", saving: "Best value" },
+};
+
 function getOrSetExpiry(): number {
   try {
     const key = "alia_offer_expiry";
@@ -50,15 +59,15 @@ interface RazorpayResponse {
 
 export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps) {
   const { data: session } = useSession();
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState("");
-  const [secsLeft,    setSecsLeft]    = useState(OFFER_SECONDS);
-  const [couponCode,  setCouponCode]  = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<Plan>("weekly");
+  const [loading,       setLoading]     = useState(false);
+  const [error,         setError]       = useState("");
+  const [secsLeft,      setSecsLeft]    = useState(OFFER_SECONDS);
+  const [couponCode,    setCouponCode]  = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError,   setCouponError]   = useState("");
   const expiryRef = useRef<number>(0);
 
-  // Initialise timer once on mount
   useEffect(() => {
     expiryRef.current = getOrSetExpiry();
     const tick = () => {
@@ -81,18 +90,23 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
     try {
       if (!window.Razorpay) await loadRazorpayScript();
 
-      const orderRes = await fetch("/api/payment/create-order", { method: "POST" });
+      const orderRes = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: selectedPlan }),
+      });
       if (!orderRes.ok) throw new Error("Failed to create payment order");
       const { orderId, amount, currency, keyId } = await orderRes.json();
 
       await new Promise<void>((resolve, reject) => {
+        const plan = PLANS[selectedPlan];
         const rzp = new window.Razorpay({
           key: keyId, amount, currency,
           name: "AstroDecide",
-          description: "Unlimited questions for 24 hours",
+          description: plan.duration,
           order_id: orderId,
           prefill: {
-            name: session?.user?.name ?? "",
+            name:  session?.user?.name  ?? "",
             email: session?.user?.email ?? "",
           },
           theme: { color: "#7c3aed" },
@@ -102,7 +116,7 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  orderId: response.razorpay_order_id,
+                  orderId:   response.razorpay_order_id,
                   paymentId: response.razorpay_payment_id,
                   signature: response.razorpay_signature,
                 }),
@@ -134,11 +148,7 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
         body: JSON.stringify({ code: couponCode.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setCouponError(data.error ?? "Invalid coupon");
-        setCouponLoading(false);
-        return;
-      }
+      if (!res.ok) { setCouponError(data.error ?? "Invalid coupon"); setCouponLoading(false); return; }
       onUnlocked(data.passExpiresAt);
     } catch {
       setCouponError("Something went wrong. Try again.");
@@ -156,231 +166,210 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
     });
   }
 
+  const activePlan = PLANS[selectedPlan];
+
   return (
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 200,
         display: "flex", alignItems: "flex-end", justifyContent: "center",
-        background: "rgba(0,0,0,0.8)",
+        background: "rgba(0,0,0,0.82)",
         backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         style={{
-          background: "rgba(14,14,14,0.97)",
+          background: "rgba(12,6,26,0.98)",
           backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          border: "1px solid rgba(167,139,250,0.1)",
           borderRadius: "28px 28px 0 0",
-          padding: "24px 24px 44px",
+          padding: "20px 20px 40px",
           width: "100%", maxWidth: "430px",
           animation: "slideUp 320ms cubic-bezier(0.16,1,0.3,1)",
+          overflowY: "auto", maxHeight: "92dvh",
         }}
       >
         {/* Drag handle */}
-        <div style={{ width: "36px", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", margin: "0 auto 20px" }} />
+        <div style={{ width: "36px", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", margin: "0 auto 18px" }} />
 
-        {/* ── Limited offer badge ── */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "18px" }}>
-          <span style={{
-            fontFamily: "var(--font-manrope), sans-serif",
-            fontSize: "10px", fontWeight: 700,
-            letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "#ff6b35",
-            background: "rgba(255,107,53,0.12)",
-            border: "1px solid rgba(255,107,53,0.3)",
-            borderRadius: "999px", padding: "5px 14px",
-          }}>
-            ✦ Limited-time offer
-          </span>
-        </div>
-
-        {/* ── Heading ── */}
+        {/* Heading */}
         <h2 style={{
           fontFamily: "var(--font-newsreader), serif",
-          fontSize: "28px", fontWeight: 400,
-          color: "#fff", textAlign: "center",
-          lineHeight: 1.2, marginBottom: "8px",
+          fontSize: "26px", fontWeight: 400,
+          color: "#fff", textAlign: "center", lineHeight: 1.2, marginBottom: "6px",
         }}>
           The stars have more to say.
         </h2>
         <p style={{
-          fontFamily: "var(--font-manrope), sans-serif",
-          fontSize: "13px", fontWeight: 300,
-          color: "#777575", textAlign: "center",
-          lineHeight: 1.6, marginBottom: "22px",
+          fontFamily: "var(--font-space-grotesk), sans-serif",
+          fontSize: "13px", color: "#5c4a7a",
+          textAlign: "center", marginBottom: "18px",
         }}>
-          You&apos;ve had your first glimpse. Unlock a full day<br />of unlimited cosmic guidance.
+          Pick a pass. Unlimited questions, full chart depth.
         </p>
 
-        {/* ── Countdown timer ── */}
+        {/* Countdown */}
         <div style={{
-          background: expired ? "rgba(255,107,53,0.06)" : "rgba(124,58,237,0.07)",
-          border: `1px solid ${expired ? "rgba(255,107,53,0.25)" : "rgba(167,139,250,0.16)"}`,
-          borderRadius: "16px", padding: "14px 16px 12px",
-          marginBottom: "18px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: expired ? "rgba(255,107,53,0.06)" : "rgba(124,58,237,0.06)",
+          border: `1px solid ${expired ? "rgba(255,107,53,0.2)" : "rgba(167,139,250,0.12)"}`,
+          borderRadius: "12px", padding: "10px 14px", marginBottom: "18px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "10px", fontWeight: 600, letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: expired ? "#ff6b35" : "#5c4a7a",
+          }}>
+            {expired ? "⚠ Offer ending" : "⏱ Offer expires in"}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "10px", fontWeight: 600,
-              letterSpacing: "0.2em", textTransform: "uppercase",
-              color: expired ? "#ff6b35" : "#adaaaa",
-            }}>
-              {expired ? "⚠ Offer ending" : "⏱ Offer expires in"}
-            </span>
-            <span style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "22px", fontWeight: 700,
-              letterSpacing: "0.06em",
-              color: expired ? "#ff6b35" : "#ffffff",
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              fontSize: "18px", fontWeight: 700,
+              color: expired ? "#ff6b35" : "#fff",
               fontVariantNumeric: "tabular-nums",
             }}>
               {expired ? "00:00" : `${mins}:${secs}`}
             </span>
-          </div>
-          {/* Progress bar */}
-          <div style={{
-            height: "3px", borderRadius: "999px",
-            background: "rgba(255,255,255,0.06)", overflow: "hidden",
-          }}>
-            <div style={{
-              height: "100%", borderRadius: "999px",
-              width: `${pct}%`,
-              background: expired
-                ? "#ff6b35"
-                : pct > 40
-                  ? "linear-gradient(90deg, #7c3aed, #a78bfa)"
-                  : "linear-gradient(90deg, #ffb347, #ff6b35)",
-              transition: "width 1s linear",
-            }} />
-          </div>
-        </div>
-
-        {/* ── Price card ── */}
-        <div style={{
-          background: "rgba(38,38,38,0.4)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "20px", padding: "18px 20px",
-          marginBottom: "18px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div>
-            <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "10px", fontWeight: 600,
-              letterSpacing: "0.2em", textTransform: "uppercase",
-              color: "#a78bfa", marginBottom: "6px",
-            }}>
-              24-hour unlimited pass
-            </p>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
-              {/* Strikethrough original */}
-              <span style={{
-                fontFamily: "var(--font-manrope), sans-serif",
-                fontSize: "16px", fontWeight: 400,
-                color: "#494847",
-                textDecoration: "line-through",
-              }}>₹100</span>
-              {/* Final price */}
-              <span style={{
-                fontFamily: "var(--font-newsreader), serif",
-                fontSize: "38px", fontWeight: 400,
-                color: "#ffffff", lineHeight: 1,
-              }}>₹50</span>
+            <div style={{ width: "60px", height: "3px", borderRadius: "999px", background: "rgba(255,255,255,0.06)" }}>
+              <div style={{
+                height: "100%", borderRadius: "999px", width: `${pct}%`,
+                background: expired ? "#ff6b35" : pct > 40 ? "linear-gradient(90deg, #7c3aed, #a78bfa)" : "linear-gradient(90deg, #ffb347, #ff6b35)",
+                transition: "width 1s linear",
+              }} />
             </div>
-            <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "11px", fontWeight: 300,
-              color: "#494847", marginTop: "4px",
-            }}>
-              Unlimited questions · Valid 24 hours
-            </p>
-          </div>
-          {/* 50% OFF badge */}
-          <div style={{
-            background: "linear-gradient(135deg, #ff6b35, #ff3b6e)",
-            borderRadius: "12px", padding: "8px 12px",
-            textAlign: "center", flexShrink: 0,
-            boxShadow: "0 4px 16px rgba(255,107,53,0.3)",
-          }}>
-            <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "18px", fontWeight: 800,
-              color: "#fff", lineHeight: 1,
-            }}>50%</p>
-            <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "9px", fontWeight: 600,
-              color: "rgba(255,255,255,0.85)", letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}>OFF</p>
           </div>
         </div>
 
-        {/* ── Feature list ── */}
-        <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+        {/* Plan selector */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
+          {(Object.entries(PLANS) as [Plan, typeof PLANS[Plan]][]).map(([key, plan]) => {
+            const active = selectedPlan === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setSelectedPlan(key)}
+                style={{
+                  position: "relative",
+                  padding: "12px 10px",
+                  background: active ? "rgba(124,58,237,0.18)" : "rgba(20,10,45,0.5)",
+                  border: `1.5px solid ${active ? "rgba(167,139,250,0.55)" : "rgba(167,139,250,0.08)"}`,
+                  borderRadius: "16px", cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 160ms ease",
+                  boxShadow: active ? "0 0 18px rgba(124,58,237,0.2)" : "none",
+                }}
+              >
+                {plan.popular && (
+                  <span style={{
+                    position: "absolute", top: "-9px", left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "linear-gradient(90deg, #7c3aed, #a78bfa)",
+                    borderRadius: "999px", padding: "2px 10px",
+                    fontFamily: "var(--font-space-grotesk), sans-serif",
+                    fontSize: "8px", fontWeight: 700,
+                    letterSpacing: "0.14em", color: "#fff",
+                    whiteSpace: "nowrap",
+                  }}>
+                    MOST POPULAR
+                  </span>
+                )}
+                <p style={{
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                  fontSize: "12px", fontWeight: 700,
+                  color: active ? "#ede9fe" : "#cdc5e8",
+                  marginBottom: "4px",
+                }}>{plan.label}</p>
+                <p style={{
+                  fontFamily: "var(--font-newsreader), serif",
+                  fontSize: "22px", fontWeight: 400,
+                  color: active ? "#fff" : "#a394c0",
+                  lineHeight: 1, marginBottom: "2px",
+                }}>{plan.price}</p>
+                <p style={{
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                  fontSize: "9px", color: "#5c4a7a",
+                  textDecoration: "line-through",
+                }}>{plan.original}</p>
+                <span style={{
+                  display: "inline-block", marginTop: "4px",
+                  background: active ? "rgba(167,139,250,0.15)" : "rgba(255,107,53,0.1)",
+                  border: `1px solid ${active ? "rgba(167,139,250,0.3)" : "rgba(255,107,53,0.2)"}`,
+                  borderRadius: "999px", padding: "2px 8px",
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                  fontSize: "9px", fontWeight: 600, letterSpacing: "0.08em",
+                  color: active ? "#a78bfa" : "#ff8c55",
+                }}>{plan.saving}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Features */}
+        <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", gap: "7px" }}>
           {[
-            { icon: "✦", text: "Unlimited questions for the full day" },
-            { icon: "◎", text: "Confidence scores + best timing windows" },
-            { icon: "◇", text: "Do / Avoid / Wait cosmic action plan" },
+            "✦  Unlimited questions",
+            "◎  Confidence scores + timing windows",
+            "◇  Do / Avoid / Wait action plan",
           ].map((f) => (
-            <div key={f.text} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ color: "#a78bfa", fontSize: "11px", flexShrink: 0 }}>{f.icon}</span>
-              <span style={{
-                fontFamily: "var(--font-manrope), sans-serif",
-                fontSize: "12px", fontWeight: 300, color: "#adaaaa",
-              }}>{f.text}</span>
-            </div>
+            <p key={f} style={{
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              fontSize: "12px", color: "#5c4a7a",
+            }}>{f}</p>
           ))}
         </div>
 
-        {/* ── CTA — payments coming soon ── */}
-        <div style={{
-          width: "100%", padding: "15px",
-          background: "rgba(38,38,38,0.35)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "999px",
-          textAlign: "center",
-        }}>
-          <p style={{
-            fontFamily: "var(--font-manrope), sans-serif",
-            fontSize: "13px", fontWeight: 500,
-            color: "#494847", letterSpacing: "0.04em",
-            margin: 0,
-          }}>
-            💳 &nbsp;Online payments coming soon
+        {/* CTA */}
+        <button
+          onClick={handleUnlock}
+          disabled={loading}
+          style={{
+            width: "100%", padding: "15px",
+            background: loading ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7c3aed, #a78bfa)",
+            border: "none", borderRadius: "999px",
+            color: "#fff",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "14px", fontWeight: 700, letterSpacing: "0.06em",
+            cursor: loading ? "default" : "pointer",
+            boxShadow: loading ? "none" : "0 4px 28px rgba(124,58,237,0.45)",
+            transition: "all 200ms ease",
+            marginBottom: "12px",
+          }}
+        >
+          {loading ? "Opening payment…" : `✦  Unlock for ${activePlan.price}`}
+        </button>
+        {error && (
+          <p style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: "11px", color: "#ff716c", textAlign: "center", marginBottom: "10px" }}>
+            {error}
           </p>
-        </div>
+        )}
 
-        {/* ── Coupon code — always visible ── */}
-        <div style={{ marginTop: "12px" }}>
+        {/* Coupon */}
+        <div style={{ marginTop: "4px" }}>
           <p style={{
-            fontFamily: "var(--font-manrope), sans-serif",
-            fontSize: "10px", fontWeight: 600,
-            letterSpacing: "0.18em", textTransform: "uppercase",
-            color: "#494847", marginBottom: "8px", textAlign: "center",
-          }}>
-            Have a coupon?
-          </p>
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em",
+            textTransform: "uppercase", color: "#3d2a5c",
+            marginBottom: "8px", textAlign: "center",
+          }}>Have a coupon?</p>
           <div style={{
             display: "flex", gap: "8px", alignItems: "center",
-            background: "rgba(38,38,38,0.5)",
-            border: `1px solid ${couponError ? "rgba(255,113,108,0.3)" : "rgba(255,255,255,0.08)"}`,
+            background: "rgba(20,10,45,0.5)",
+            border: `1px solid ${couponError ? "rgba(255,113,108,0.3)" : "rgba(167,139,250,0.1)"}`,
             borderRadius: "12px", padding: "4px 4px 4px 14px",
-            transition: "border-color 150ms ease",
           }}>
             <input
               value={couponCode}
               onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
               onKeyDown={(e) => e.key === "Enter" && handleCoupon()}
-              placeholder="Enter code..."
+              placeholder="Enter code…"
               style={{
                 flex: 1, background: "transparent", border: "none",
                 color: "#fff", padding: "10px 0",
-                fontFamily: "var(--font-manrope), sans-serif",
-                fontSize: "13px", fontWeight: 500,
-                letterSpacing: "0.1em",
+                fontFamily: "var(--font-space-grotesk), sans-serif",
+                fontSize: "13px", fontWeight: 500, letterSpacing: "0.1em",
               }}
             />
             <button
@@ -390,22 +379,20 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
                 padding: "9px 16px", borderRadius: "9px",
                 background: couponCode.trim() ? "rgba(167,139,250,0.12)" : "transparent",
                 border: `1px solid ${couponCode.trim() ? "rgba(167,139,250,0.28)" : "transparent"}`,
-                color: couponCode.trim() ? "#a78bfa" : "#494847",
-                fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif",
+                color: couponCode.trim() ? "#a78bfa" : "#3d2a5c",
+                fontFamily: "var(--font-space-grotesk), sans-serif",
                 fontSize: "12px", fontWeight: 600,
                 cursor: couponCode.trim() && !couponLoading ? "pointer" : "default",
-                transition: "all 150ms ease", flexShrink: 0,
+                flexShrink: 0,
               }}
             >
               {couponLoading ? "…" : "Apply"}
             </button>
           </div>
           {couponError && (
-            <p style={{
-              fontFamily: "var(--font-manrope), sans-serif",
-              fontSize: "11px", color: "#ff716c",
-              textAlign: "center", marginTop: "6px",
-            }}>{couponError}</p>
+            <p style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: "11px", color: "#ff716c", textAlign: "center", marginTop: "6px" }}>
+              {couponError}
+            </p>
           )}
         </div>
 
@@ -414,13 +401,12 @@ export default function PaywallModal({ onClose, onUnlocked }: PaywallModalProps)
           style={{
             width: "100%", padding: "10px", marginTop: "8px",
             background: "transparent", border: "none",
-            color: "#494847",
-            fontFamily: "var(--font-manrope), sans-serif",
-            fontSize: "12px", fontWeight: 400,
-            cursor: "pointer", letterSpacing: "0.04em",
+            color: "#3d2a5c",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "12px", cursor: "pointer",
           }}
         >
-          Maybe later
+          {expired ? "Close" : "Maybe later"}
         </button>
       </div>
     </div>

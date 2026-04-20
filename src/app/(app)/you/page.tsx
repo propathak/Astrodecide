@@ -34,12 +34,39 @@ function getSignMeta(sign: string) {
 }
 
 export default function YouPage() {
-  const { profile, loading } = useProfile();
+  const { profile, loading, error, retry } = useProfile();
 
   if (loading) {
     return (
       <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
         <CosmicLoader />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 32px", textAlign: "center" }}>
+        <p style={{ fontFamily: "var(--font-newsreader), Georgia, serif", fontSize: "22px", color: "#ede9fe", marginBottom: "8px" }}>
+          The stars went quiet.
+        </p>
+        <p style={{ fontFamily: "var(--font-space-grotesk), var(--font-manrope), sans-serif", fontSize: "13px", color: "#adaaaa", marginBottom: "28px" }}>
+          Couldn&apos;t load your profile. Check your connection and try again.
+        </p>
+        <button
+          onClick={retry}
+          style={{
+            padding: "12px 28px", borderRadius: "999px",
+            background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
+            border: "none", color: "#fff",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "13px", fontWeight: 600,
+            letterSpacing: "0.06em", cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(124,58,237,0.35)",
+          }}
+        >
+          Try again
+        </button>
       </div>
     );
   }

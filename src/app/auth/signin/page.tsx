@@ -269,6 +269,8 @@ export default function SignInPage() {
               { icon: "✦", text: "1 free question to start" },
               { icon: "◎", text: "Personalized Vedic birth chart" },
               { icon: "◇", text: "AI-powered cosmic guidance" },
+            { icon: "◈", text: "Data-Driven Astrology. Trusted by India." },
+            { icon: "◈", text: "Built by IITians." },
             ].map((item) => (
               <div key={item.text} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{ fontSize: "12px", color: "#a78bfa", flexShrink: 0, lineHeight: 1 }}>

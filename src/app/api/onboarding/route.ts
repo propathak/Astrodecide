@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
         event: "onboarding",
         userId,
         email: session.user.email ?? "",
-        meta:  { name, pob },
+        meta:  { name, dob, tob, pob },
       }).catch(() => {});
     }
 

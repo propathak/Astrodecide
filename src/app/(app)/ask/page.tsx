@@ -16,7 +16,7 @@ const QUICK_ACTIONS = [
   "Career timing this month",
 ];
 
-const CATEGORIES = ["CAREER", "LOVE", "MONEY", "FAMILY", "TRAVEL", "HEALTH", "TIMING"];
+// Category bar removed per product decision
 
 export default function AskPage() {
   const {
@@ -34,6 +34,7 @@ export default function AskPage() {
     setIsPaid,
     setPassExpiresAt,
     sendMessage,
+    retryLastMessage,
     messagesEndRef,
   } = useOracle();
 
@@ -140,6 +141,26 @@ export default function AskPage() {
                     .replace(/\*\*(.*?)\*\*/g, "$1")
                     .replace(/__(.*?)__/g, "$1")}
                 </p>
+                {msg.content === "The stars are momentarily obscured. Please try again." && (
+                  <button
+                    onClick={() => retryLastMessage()}
+                    style={{
+                      marginTop: "10px",
+                      padding: "7px 16px",
+                      borderRadius: "999px",
+                      background: "rgba(124,58,237,0.12)",
+                      border: "1px solid rgba(167,139,250,0.25)",
+                      color: "#a78bfa",
+                      fontFamily: "var(--font-space-grotesk), sans-serif",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.06em",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ↺ Try again
+                  </button>
+                )}
                 {msg.structured && <StructuredAnswer data={msg.structured} />}
               </>
             ) : (
@@ -204,32 +225,9 @@ export default function AskPage() {
           backdropFilter: "blur(28px)",
           WebkitBackdropFilter: "blur(28px)",
           borderTop: "1px solid rgba(167,139,250,0.07)",
-          paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(88px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* Category chips */}
-        {showCategoryBar && (
-          <div
-            style={{
-              padding: "10px 16px 6px",
-              display: "flex",
-              gap: "6px",
-              overflowX: "auto",
-              scrollbarWidth: "none",
-            }}
-          >
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                className={`chip${activeCategory === cat ? " active" : ""}`}
-                style={{ fontSize: "10px", padding: "5px 12px", letterSpacing: "0.08em" }}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Text input row */}
         <div

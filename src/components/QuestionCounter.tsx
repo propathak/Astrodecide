@@ -24,7 +24,7 @@ export default function QuestionCounter({
     return (
       <div style={{
         display: "flex", alignItems: "center", gap: "6px",
-        fontFamily: "var(--font-manrope), sans-serif",
+        fontFamily: "var(--font-space-grotesk), sans-serif",
         fontSize: "11px", fontWeight: 500,
         color: "rgba(167,139,250,0.75)", letterSpacing: "0.04em",
       }}>
@@ -34,21 +34,21 @@ export default function QuestionCounter({
     );
   }
 
-  // Out of free questions — show upgrade button
+  // Out of free questions — show glowing upgrade button
   if (used >= FREE_QUESTION_LIMIT) {
     return (
       <button
         onClick={onUpgrade}
+        className="upgrade-glow"
         style={{
           display: "flex", alignItems: "center", gap: "6px",
-          background: "rgba(167,139,250,0.08)",
-          border: "1px solid rgba(167,139,250,0.22)",
+          background: "rgba(124,58,237,0.18)",
+          border: "1px solid rgba(167,139,250,0.45)",
           borderRadius: "999px", padding: "5px 14px",
-          color: "#a78bfa",
-          fontFamily: "var(--font-manrope), sans-serif",
-          fontSize: "11px", fontWeight: 500,
+          color: "#c4b5fd",
+          fontFamily: "var(--font-space-grotesk), sans-serif",
+          fontSize: "11px", fontWeight: 600,
           cursor: "pointer", letterSpacing: "0.06em",
-          transition: "background 180ms ease",
         }}
       >
         ✦ Upgrade
@@ -56,6 +56,6 @@ export default function QuestionCounter({
     );
   }
 
-  // Free tier, questions still available — show nothing
+  // Free tier, still have questions — show nothing
   return null;
 }

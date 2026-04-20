@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { verifyPaymentSignature, PASS_DURATION_MS } from "@/lib/razorpay";
+import { verifyPaymentSignature, PLANS } from "@/lib/razorpay";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { appendToSheet } from "@/lib/sheets";
@@ -31,7 +31,15 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb();
-    const passExpiresAt = Timestamp.fromMillis(Date.now() + PASS_DURATION_MS);
+
+    // Read durationMs from the payment record (set at order creation)
+    const paymentDoc = await db.collection(COLLECTIONS.PAYMENTS).doc(orderId).get();
+    const paymentData = paymentDoc.data() ?? {};
+    const passType = (paymentData.passType as string) ?? "daily";
+    const durationMs: number = paymentData.durationMs ?? PLANS[passType as keyof typeof PLANS]?.durationMs ?? PLANS.daily.durationMs;
+    const amountPaid: number = paymentData.amount ?? 0;
+
+    const passExpiresAt = Timestamp.fromMillis(Date.now() + durationMs);
 
     // Update payment record
     await db.collection(COLLECTIONS.PAYMENTS).doc(orderId).update({
@@ -44,6 +52,7 @@ export async function POST(req: NextRequest) {
     // Unlock user pass
     await db.collection(COLLECTIONS.USERS).doc(userId).update({
       paymentStatus: "active",
+      passType,
       passExpiresAt,
     });
 
@@ -51,7 +60,7 @@ export async function POST(req: NextRequest) {
       event: "payment_success",
       userId,
       email: session.user.email ?? "",
-      meta: { amount: 50 },
+      meta: { amount: amountPaid / 100 },
     }).catch(() => {});
 
     return NextResponse.json({

@@ -12,8 +12,10 @@ interface ChatMessage {
 }
 
 const INTRO_SEQUENCE = [
-  { content: "Hi ✦ I'm ALIA — your cosmic guide.", delay: 700 },
-  { content: "I read the stars to help you navigate life's crossroads.", delay: 1500 },
+  { content: "Hi — I'm ALIA.", delay: 700 },
+  { content: "I read birth charts the way a good friend reads a room — honestly, and without judgment.", delay: 1600 },
+  { content: "People come to me at crossroads. Big decisions. Quiet doubts. Moments where logic isn't enough.", delay: 3200 },
+  { content: "Before I can see your stars, I need to know a few things about you.", delay: 5200 },
 ];
 
 // ── Data ───────────────────────────────────────────────────────────────────────
@@ -359,7 +361,7 @@ function CitySearch({ onConfirm }: { onConfirm: (city: string) => void }) {
         })
         .filter((r, i, arr) => r.value && arr.findIndex(x => x.value === r.value) === i);
 
-      setResults(mapped.slice(0, 6));
+      setResults(mapped.slice(0, 10));
     } catch {
       setResults([]);
     } finally {
@@ -498,6 +500,7 @@ export default function OnboardingPage() {
   const [typing, setTyping] = useState(false);
   const [data, setData] = useState({ name: "", dob: "", tob: "", pob: "" });
   const [error, setError] = useState("");
+  const [editingField, setEditingField] = useState<Field | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -511,10 +514,10 @@ export default function OnboardingPage() {
           setMessages((prev) => [...prev, { id: `intro-${i}`, role: "alia", content }]);
           if (i === INTRO_SEQUENCE.length - 1) {
             timers.push(setTimeout(() => {
-              setMessages((prev) => [...prev, { id: "q-name", role: "alia", content: "What's your name?" }]);
+              setMessages((prev) => [...prev, { id: "q-name", role: "alia", content: "What do I call you?" }]);
               setCurrentField("name");
               setTyping(false);
-            }, 650));
+            }, 900));
           }
         }, delay)
       );
@@ -545,11 +548,11 @@ export default function OnboardingPage() {
     setTimeout(() => {
       setMessages((prev) => [...prev, {
         id: "a-name", role: "alia",
-        content: `${value}. ✦\n\nWhen were you born?`,
+        content: `${value}. ✦\n\nThe stars remember the exact moment you arrived. When were you born?`,
       }]);
       setCurrentField("dob");
       setTyping(false);
-    }, 720);
+    }, 820);
   }
 
   // Handle wheel/autocomplete confirmations
@@ -563,25 +566,25 @@ export default function OnboardingPage() {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           id: "a-dob", role: "alia",
-          content: "And the time of your birth?",
+          content: "Good. The time matters too — even an hour shifts your rising sign. What time were you born?\n\nA rough guess is fine if you're not sure.",
         }]);
         setCurrentField("tob");
         setTyping(false);
-      }, 720);
+      }, 820);
     } else if (field === "tob") {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           id: "a-tob", role: "alia",
-          content: "Where in the world were you born?",
+          content: "Almost there. Where in the world did you take your first breath?",
         }]);
         setCurrentField("pob");
         setTyping(false);
-      }, 720);
+      }, 820);
     } else if (field === "pob") {
       setTimeout(() => {
         setMessages((prev) => [...prev, {
           id: "mapping", role: "alia",
-          content: `✦ ${newData.name}, your celestial blueprint is being mapped...`,
+          content: `I'm mapping your chart now, ${newData.name}. Give me a moment...`,
         }]);
         setCurrentField("submitting");
         setTyping(false);
@@ -598,12 +601,32 @@ export default function OnboardingPage() {
         body: JSON.stringify(submitData),
       });
       if (!res.ok) throw new Error("Failed");
-      await new Promise((r) => setTimeout(r, 2400));
+
+      // Chart is ready — show a teaser cliffhanger before entering the oracle
+      setTyping(true);
+      await new Promise((r) => setTimeout(r, 1800));
+      setMessages((prev) => [...prev, {
+        id: "cliffhanger-1", role: "alia",
+        content: `Your chart is ready, ${submitData.name}. ✦`,
+      }]);
+      await new Promise((r) => setTimeout(r, 1400));
+      setMessages((prev) => [...prev, {
+        id: "cliffhanger-2", role: "alia",
+        content: "There's something in here I don't see very often. Something about the next few months that I think you need to hear.",
+      }]);
+      await new Promise((r) => setTimeout(r, 1800));
+      setMessages((prev) => [...prev, {
+        id: "cliffhanger-3", role: "alia",
+        content: "Ask me anything and I'll start there.",
+      }]);
+      setTyping(false);
+      await new Promise((r) => setTimeout(r, 1200));
       router.push("/ask");
     } catch {
+      setTyping(false);
       setMessages((prev) => [
         ...prev,
-        { id: "err", role: "alia", content: "Something went wrong. Where were you born again?" },
+        { id: "err", role: "alia", content: "Something went wrong mapping your chart. Where were you born again?" },
       ]);
       setCurrentField("pob");
     }
@@ -628,40 +651,75 @@ export default function OnboardingPage() {
         </span>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{
-            display: "flex",
-            justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-            animation: "slideUp 260ms ease-out",
-          }}>
-            {msg.role === "alia" ? (
-              <p style={{
-                fontFamily: "var(--font-newsreader), serif",
-                fontSize: "19px", fontWeight: 400,
-                lineHeight: 1.7, color: "#ede9fe",
-                maxWidth: "92%", whiteSpace: "pre-wrap",
-                letterSpacing: "0.01em",
-              }}>
-                {msg.content}
-              </p>
-            ) : (
-              <div style={{
-                background: "rgba(38,38,38,0.5)",
-                backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-                border: "1px solid rgba(167,139,250,0.12)",
-                borderRadius: "20px 20px 5px 20px",
-                padding: "12px 18px",
-                fontFamily: "var(--font-manrope), sans-serif",
-                fontSize: "15px", fontWeight: 400,
-                color: "#ede9fe", maxWidth: "78%", lineHeight: 1.55,
-              }}>
-                {msg.content}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* Messages — extra bottom padding so content clears the fixed input bar */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px 260px", display: "flex", flexDirection: "column", gap: "20px" }}>
+        {messages.map((msg) => {
+          // Map user message ids to editable fields
+          const editableMap: Record<string, Field> = {
+            "a-name": "name",
+            "a-dob": "dob",
+            "a-tob": "tob",
+          };
+          // User bubbles that can be edited: find the user bubble BEFORE an alia response
+          const prevAliaId = msg.id.startsWith("u-") ? messages[messages.indexOf(msg) - 1]?.id : null;
+          const editableFor = prevAliaId ? editableMap[prevAliaId] : null;
+          const canEdit = editableFor && currentField !== "submitting" && !typing;
+
+          return (
+            <div key={msg.id} style={{
+              display: "flex",
+              justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+              flexDirection: "column",
+              alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+              animation: "slideUp 260ms ease-out",
+            }}>
+              {msg.role === "alia" ? (
+                <p style={{
+                  fontFamily: "var(--font-newsreader), serif",
+                  fontSize: "19px", fontWeight: 400,
+                  lineHeight: 1.7, color: "#ede9fe",
+                  maxWidth: "92%", whiteSpace: "pre-wrap",
+                  letterSpacing: "0.01em",
+                }}>
+                  {msg.content}
+                </p>
+              ) : (
+                <>
+                  <div style={{
+                    background: "rgba(38,38,38,0.5)",
+                    backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                    border: "1px solid rgba(167,139,250,0.12)",
+                    borderRadius: "20px 20px 5px 20px",
+                    padding: "12px 18px",
+                    fontFamily: "var(--font-manrope), sans-serif",
+                    fontSize: "15px", fontWeight: 400,
+                    color: "#ede9fe", maxWidth: "78%", lineHeight: 1.55,
+                  }}>
+                    {msg.content}
+                  </div>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingField(editableFor!);
+                        setCurrentField(editableFor!);
+                      }}
+                      style={{
+                        marginTop: "4px",
+                        background: "transparent", border: "none",
+                        color: "#5c4a7a",
+                        fontFamily: "var(--font-space-grotesk), sans-serif",
+                        fontSize: "10px", letterSpacing: "0.08em",
+                        cursor: "pointer", padding: "2px 4px",
+                      }}
+                    >
+                      ✏ edit
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
 
         {/* Typing dots */}
         {typing && (
@@ -691,13 +749,15 @@ export default function OnboardingPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input Area ──────────────────────────────────────────────────────── */}
+      {/* ── Input Area — fixed to bottom so keyboard never hides it ── */}
       <div style={{
-        flexShrink: 0,
-        padding: "14px 20px calc(32px + env(safe-area-inset-bottom))",
-        background: "rgba(8,4,20,0.94)",
+        position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: "430px",
+        padding: "14px 20px calc(20px + env(safe-area-inset-bottom))",
+        background: "rgba(8,4,20,0.96)",
         backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)",
         borderTop: "1px solid rgba(167,139,250,0.08)",
+        zIndex: 50,
       }}>
         {/* Name text input */}
         {showNameInput && (
@@ -728,10 +788,11 @@ export default function OnboardingPage() {
                 <input
                   ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => setInput(e.target.value.replace(/[0-9]/g, ""))}
                   onKeyDown={(e) => e.key === "Enter" && handleTextSend()}
                   placeholder="Your name..."
                   autoComplete="off"
+                  inputMode="text"
                   style={{
                     flex: 1, background: "transparent", border: "none",
                     padding: "13px 0", fontSize: "16px",
