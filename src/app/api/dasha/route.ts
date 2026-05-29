@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { ALIA_SYSTEM_PROMPT } from "@/lib/alia";
 import { auth } from "@/lib/auth";
 import { getDb, COLLECTIONS } from "@/lib/firebase";
 import { Timestamp } from "firebase-admin/firestore";
 
-// opus-4-6 at 900 tokens ~= 29s; 60s gives comfortable headroom
+// Sonnet at 1200 tokens ≈ 12–15s; 60s gives comfortable headroom
 export const maxDuration = 60;
+
+const DASHA_SYSTEM_PROMPT = "You are a Vedic astrology expert specialising in Vimshottari Dasha interpretation. Respond ONLY with valid JSON — no markdown fences, no commentary before or after the JSON object.";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -111,7 +112,7 @@ Respond ONLY with this JSON (no markdown, no commentary — start your reply wit
     const response = await client.messages.create({
       model:      "claude-sonnet-4-5",
       max_tokens: 1200,  // 5 impacts + 3 challenges + 3 timeline ≈ 700–900 tokens; 1200 gives safe headroom
-      system:     ALIA_SYSTEM_PROMPT,
+      system:     DASHA_SYSTEM_PROMPT,
       messages:   [{ role: "user", content: prompt }],
     });
 
